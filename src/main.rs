@@ -26,6 +26,8 @@ fn find_first_non_bg_pixel(img:&image::RgbaImage,back:&image::Rgba<u8>) -> (u32,
 
 fn find_limit(img:&image::RgbaImage,back:&image::Rgba<u8>,first:(u32,u32),offset:i32) -> u32
 {
+	let blue = image::Rgba([0 as u8,0 as u8,255 as u8,255 as u8]);
+	let green = image::Rgba([0 as u8,255 as u8,0 as u8,255 as u8]);
 	let mut done = false;
 	let (xuint,y) = first;
 	let mut x:i32 = xuint as i32;
@@ -33,7 +35,8 @@ fn find_limit(img:&image::RgbaImage,back:&image::Rgba<u8>,first:(u32,u32),offset
 	let (xmax,_) = img.dimensions();
 
 	while !done {
-		if img.get_pixel(x as u32,y) != back {
+		let color = img.get_pixel(x as u32,y);
+		if color != back && *color != blue && *color != green {
 			ret = x as u32;
 			x = x + offset;
 		} else {
@@ -48,10 +51,13 @@ fn find_limit(img:&image::RgbaImage,back:&image::Rgba<u8>,first:(u32,u32),offset
 }
 
 fn check_has_pixel_on_line(img:&image::RgbaImage,back:&image::Rgba<u8>,y:u32,xmin:u32,xmax:u32) -> bool {
+	let blue = image::Rgba([0 as u8,0 as u8,255 as u8,255 as u8]);
+	let green = image::Rgba([0 as u8,255 as u8,0 as u8,255 as u8]);
 	let mut ret = false;
 
 	for x in xmin..xmax {
-		if img.get_pixel(x,y) != back {
+		let color = img.get_pixel(x,y);
+		if color != back && *color != blue && *color != green {
 			ret = true;
 			break;
 		}
@@ -149,6 +155,12 @@ fn main() {
 					
 					//draw for save
 					paint_square(rgba,&background,square);
+					
+					//say if keep
+					let (_,_,w,h) = square;
+					if w*h < 100 {
+						println!("IGNORE, too small !");
+					}
 				}
 			},
 			None => println!("Invalid format ! Expect RGBA8 !")
