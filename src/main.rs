@@ -15,6 +15,83 @@ use std::fs::File;
 use std::path::Path;
 
 use image::GenericImage;
+use image::ImageBuffer;
+use image::Rgba;
+use image::Luma;
+
+const EXTRACT_MARGINS: u32 = 30;
+
+pub struct Piece {
+	id: u32,
+	position:(u32,u32,u32,u32),
+	image: ImageBuffer<Rgba<u8>,Vec<u8>>,
+	mask: ImageBuffer<Luma<u8>,Vec<u8>>,
+}
+
+impl Piece {
+	pub fn new(img:&image::RgbaImage,back:&image::Rgba<u8>,square:(u32,u32,u32,u32),id:u32) -> Self {
+		//extract
+		let (x0,y0,w,h) = square;
+
+		//take margins to rotate inside
+		let (ww,hh) = (w+2*EXTRACT_MARGINS*w/100,h+2*EXTRACT_MARGINS*h/100);
+		let (x1,y1) = (EXTRACT_MARGINS*w/100,EXTRACT_MARGINS*h/100);
+
+		//create
+		let mut cur = Piece {
+			id: id,
+			position: square,
+			image: ImageBuffer::new(ww,hh),
+			mask: ImageBuffer::new(ww,hh),
+		};
+
+		//init images
+		for pixel in cur.image.pixels_mut() {
+			*pixel = *back;
+		}
+		let b = image::Luma([0 as u8]);
+		for pixel in cur.mask.pixels_mut() {
+			*pixel = b;
+		}
+
+		//copy image & mask
+		for y in 0..h {
+			for x in 0..w {
+				cur.image.put_pixel(x1+x,y1+y,*img.get_pixel(x0+x,y0+y));
+			}
+		}
+
+		//build mask
+		let col = image::Luma([128u8]);
+		for y in 0..h {
+			for x in 0..w {
+				if img.get_pixel(x0+x,y0+y) != back {
+					cur.mask.put_pixel(x1+x,y1+y,col);
+				}
+			}
+		}
+
+		//ret
+		cur
+	}
+
+	pub fn save(self: &Piece) {
+		//build base name
+		let base = format!("step-2-extract-{:?}",self.id);
+
+		//export image
+		{
+			let fname = base.to_string() + "-img.png";
+			self.image.save(fname).unwrap();
+		}
+
+		//export mask
+		{
+			let fname = base.to_string() + "-mask.png";
+			self.mask.save(fname).unwrap();
+		}
+	}
+}
 
 ///Search first pixel which is not color of background
 fn find_first_non_bg_pixel(img:&image::RgbaImage,back:&image::Rgba<u8>) -> (u32,u32)
@@ -147,19 +224,25 @@ fn main() {
 	let background = img.get_pixel(0,0);
 	println!("Pixel 0,0 : {:?}",background);
 
-	//find first black pixel
+	//check if RGB which is not supported by our code
 	{
-		{
 		let r = img.as_mut_rgb8();
 		match r {
-			Some(t) => println!("ok"),
-			None => println!("nok")
+			Some(_) => println!("Not ok, image if RGB, not RGBA"),
+			None => {}
 		}
-		}
+	}
+
+	//list
+	let mut all: Vec<Piece> = Vec::new();
+
+	//find first black pixel
+	{
 		let rgba8 = img.as_mut_rgba8();
 		match rgba8 {
 			Some(rgba) => {
 				let mut first = (1,1);
+				let mut id: u32 = 0;
 				while first != (0,0) {
 					first = find_first_non_bg_pixel(&rgba,&background);
 					println!("First black pixel : {:?}",first);
@@ -167,23 +250,31 @@ fn main() {
 					//fin square
 					let square = find_square_non_bg(&rgba,&background,first);
 					println!("Square : {:?}",square);
+
+					//extract into list
+					let (_,_,w,h) = square;
+					if w*h > 100 {
+						all.push(Piece::new(rgba,&background,square,id));
+						id = id + 1;
+					} else {
+						println!("IGNORE, too small !");
+					}
 					
 					//draw for save
 					paint_square(rgba,&background,square);
-					
-					//say if keep
-					let (_,_,w,h) = square;
-					if w*h < 100 {
-						println!("IGNORE, too small !");
-					}
 				}
 			},
 			None => println!("Invalid format ! Expect RGBA8 !")
 		}
 	}
 
+	//save list
+	for p in all.iter() {
+		p.save();
+	}
+
 	//create output image
-	let ref mut fout = File::create("output.png").unwrap();
+	let ref mut fout = File::create("step-1-detect.png").unwrap();
 
 	//write to file
 	img.write_to(fout, image::PNG).unwrap();
