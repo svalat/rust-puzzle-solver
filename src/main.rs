@@ -1,3 +1,11 @@
+/*****************************************************
+             PROJECT  : rust-puzzle-solver
+             VERSION  : 0.1.0-dev
+             DATE     : 05/2018
+             AUTHOR   : Valat Sébastien
+             LICENSE  : CeCILL-C
+*****************************************************/
+
 //load external
 extern crate image;
 
@@ -141,6 +149,13 @@ fn main() {
 
 	//find first black pixel
 	{
+		{
+		let r = img.as_mut_rgb8();
+		match r {
+			Some(t) => println!("ok"),
+			None => println!("nok")
+		}
+		}
 		let rgba8 = img.as_mut_rgba8();
 		match rgba8 {
 			Some(rgba) => {

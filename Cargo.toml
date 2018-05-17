@@ -2,6 +2,11 @@
 name = "rust-puzzle-solver"
 version = "0.1.0"
 authors = ["Sebastien Valat <sebastien.valat@gmail.com>"]
+description = "A tool to solve puzzles from photos of pieces"
+keywords = ["puzzle","solver","picture"]
+license = "CeCILL-C"
+publish = false
 
 [dependencies]
 image = "0.19.0"
+imageproc = "0.15.0"
