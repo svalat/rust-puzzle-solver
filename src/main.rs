@@ -9,6 +9,7 @@
 //load external
 extern crate image;
 extern crate imageproc;
+extern crate scoped_pool;
 
 //modules
 mod piece;
@@ -19,6 +20,9 @@ mod step3_rotate;
 use std::env;
 use std::fs::File;
 use std::path::Path;
+
+//pool
+use scoped_pool::Pool;
 
 //load image
 use image::GenericImage;
@@ -93,19 +97,29 @@ fn main() {
 		}
 	}
 
+	//create pool
+	let pool = Pool::new(4);
+
 	//down line
-	for p in all.iter_mut() {
-		
-		let angle = step3_rotate::find_best_rectangle(&p.mask);
-		p.angle = angle;
-		println!("+++> {:?} => {:?}",p.id,angle);
-		step3_rotate::draw_best_rectangle(&mut p.mask,angle);
-	}
+	pool.scoped(|scope| {
+		for p in all.iter_mut() {
+			scope.execute(move || {
+				let angle = step3_rotate::find_best_rectangle(&p.mask);
+				p.angle = angle;
+				println!("+++> {:?} => {:?}",p.id,angle);
+				step3_rotate::draw_best_rectangle(&mut p.mask,angle);
+			});
+		}
+	});
 
 	//save list
-	for p in all.iter() {
-		p.save();
-	}
+	pool.scoped(|scope| {
+		for p in all.iter() {
+			scope.execute(move || {
+				p.save();
+			});
+		}
+	});
 
 	//create output image
 	let ref mut fout = File::create("step-1-detect.png").unwrap();
