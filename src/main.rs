@@ -23,6 +23,7 @@ use std::path::Path;
 //load image
 use image::GenericImage;
 
+///Main function to run the program.
 fn main() {
 	//info
 	println!("rust-puzzle-solver-0.1.0");
@@ -95,16 +96,10 @@ fn main() {
 	//down line
 	for p in all.iter_mut() {
 		
-		println!("------ {:?} ------",p.id);
 		let angle = step3_rotate::find_best_rectangle(&p.mask);
-		println!("+++> {:?}",angle);
+		p.angle = angle;
+		println!("+++> {:?} => {:?}",p.id,angle);
 		step3_rotate::draw_best_rectangle(&mut p.mask,angle);
-
-		/*let angle = 0;
-		let offset1 = find_limit_offset(&p.mask,angle);
-		let offset2 = find_limit_offset(&p.mask,angle+180);
-		draw_limit_line(&mut p.mask,angle,offset1);
-		draw_limit_line(&mut p.mask,angle+180,offset2);*/
 	}
 
 	//save list

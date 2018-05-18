@@ -24,4 +24,13 @@ Step 2 - Rotate objects
 
 In order to well extract the border pattern for matching with other pieces we need to rotate the piece to put it into an optimal position.
 
-TODO
+To find the nice rotation angle we proceed by search the rectangle which surround the share with the higher ratio between larger side and smaller side.
+This seams to work quite well in practice because most pieces are rectangular.
+
+The algorithm the find the angle run by doing :
+ * Calculate the middle point of the image (which is more or less the middle of the piece)
+ * We then loop on all angles between 0 and 90 degree
+ * For each angle we build the rectangle from the middle by searching the first border line which does not cover any interesting pixel.
+ * We do this by testing all the lines looping on an offset to move from the center to the border with the given angle.
+ * we do this with the 4 sides of the rectangle turned by the given angle, one by one.
+ * We can then extract the ratio of larger side divided by smaller side. The larger ratio for all the tested angle give the best solution.

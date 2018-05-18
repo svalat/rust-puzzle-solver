@@ -17,6 +17,8 @@ use std::cmp;
 //consts
 const ANGLE_RESOLUTION: u32 = 1;
 
+/// Calculate the coordinate of a line turned from a given angle and at offset distance of the
+/// image center.
 fn calc_line_coord(img:&image::GrayImage,angle:u32,offset:u32) -> ((f32,f32),(f32,f32)) {
 	//middle of image
 	let (w,h) = img.dimensions();
@@ -39,6 +41,7 @@ fn calc_line_coord(img:&image::GrayImage,angle:u32,offset:u32) -> ((f32,f32),(f3
 	((x0,y0),(x1,y1))
 }
 
+/// Draw the line limit for debugging.
 pub fn draw_limit_line(img:&mut image::GrayImage,angle:u32,offset:u32) {
 	//coords
 	let (start,end) = calc_line_coord(&img,angle,offset);
@@ -47,6 +50,8 @@ pub fn draw_limit_line(img:&mut image::GrayImage,angle:u32,offset:u32) {
 	imageproc::drawing::draw_line_segment_mut(img,start,end,image::Luma([255 as u8]));
 }
 
+/// Check if the given line cover some interestsing pixel so we can consider searching the next
+/// one to build the rectangle surrounding the object to rotate.
 fn check_limit_line(img:&image::GrayImage,angle:u32,offset:u32) -> bool {
 	//coords
 	let (start,end) = calc_line_coord(&img,angle,offset);
@@ -70,6 +75,8 @@ fn check_limit_line(img:&image::GrayImage,angle:u32,offset:u32) -> bool {
 	has_pixel
 }
 
+/// For a given angle search the min distance for which the line do not cover any
+/// interesting pixels.
 fn find_limit_offset(img:&image::GrayImage,angle:u32) -> u32 {
 	//get max offset
 	let (w,h) = img.dimensions();
@@ -88,6 +95,7 @@ fn find_limit_offset(img:&image::GrayImage,angle:u32) -> u32 {
 	ret
 }
 
+/// Draw the best rectangle for debugging using the given angle.
 pub fn draw_best_rectangle(img:&mut image::GrayImage,angle:u32) {
 	//axis 1
 	let offset1 = find_limit_offset(&img,angle);
@@ -104,6 +112,9 @@ pub fn draw_best_rectangle(img:&mut image::GrayImage,angle:u32) {
 	draw_limit_line(img,angle+90+180,offset4);
 }
 
+/// Find the best rectangle to rotate the piece by considering searching the
+/// larger ratio between larger side and smaller side of rectangle.
+/// It return the bests angle.
 pub fn find_best_rectangle(img:&image::GrayImage) -> u32 {
 	let mut angle:u32 = 0;
 	let mut angle_max = 0;

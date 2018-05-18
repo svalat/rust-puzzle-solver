@@ -25,32 +25,46 @@ pub fn find_first_non_bg_pixel(img:&image::RgbaImage,back:&image::Rgba<u8>) -> (
 	ret
 }
 
+/// Search the limit of the object on the give line. It loop from the starting point the one side
+/// (depening on the sign of offset). When it don't see pixels anymore it stop and return
+/// the position.
 fn find_limit(img:&image::RgbaImage,back:&image::Rgba<u8>,first:(u32,u32),offset:i32) -> u32
 {
+	//colors to ignore
 	let blue = image::Rgba([0 as u8,0 as u8,255 as u8,255 as u8]);
 	let green = image::Rgba([0 as u8,255 as u8,0 as u8,255 as u8]);
+	
+	//vars
 	let mut done = false;
 	let (xuint,y) = first;
 	let mut x:i32 = xuint as i32;
 	let mut ret:u32 = x as u32;
 	let (xmax,_) = img.dimensions();
 
+	//loop unitl end
 	while !done {
 		let color = img.get_pixel(x as u32,y);
+
+		//if has interesting pixel
 		if color != back && *color != blue && *color != green {
 			ret = x as u32;
 			x = x + offset;
 		} else {
 			done = true;
 		}
+
+		//out of picture
 		if x < 0 || x >= xmax as i32 {
 			done = true;
 		}
 	}
 
+	//return
 	ret
 }
 
+/// Check if a given line contain pixel to know if we reach the bottom of the object to extract
+/// xmin and xmax should be the left and right limit of the object.
 fn check_has_pixel_on_line(img:&image::RgbaImage,back:&image::Rgba<u8>,y:u32,xmin:u32,xmax:u32) -> bool {
 	let blue = image::Rgba([0 as u8,0 as u8,255 as u8,255 as u8]);
 	let green = image::Rgba([0 as u8,255 as u8,0 as u8,255 as u8]);
@@ -67,7 +81,9 @@ fn check_has_pixel_on_line(img:&image::RgbaImage,back:&image::Rgba<u8>,y:u32,xmi
 	ret
 }
 
-///search orig and size
+/// Start from the first interesting pixel and compute the rectangle surrounding the object.
+/// It proceed by searching limits on all lines going from top to bottom until it doesn't
+/// anymore find interesting pixels one the line.
 pub fn find_square_non_bg(img:&image::RgbaImage,back:&image::Rgba<u8>,first:(u32,u32)) -> (u32,u32,u32,u32)
 {
 	let (_,ymin) = first;
@@ -98,6 +114,8 @@ pub fn find_square_non_bg(img:&image::RgbaImage,back:&image::Rgba<u8>,first:(u32
 	(xmin,ymin,xmax-xmin,y-ymin)
 }
 
+/// Paint the square for debugging and to ignore the object for next sarting point search.
+/// It paint the background in green and the object in blue.
 pub fn paint_square(img:&mut image::RgbaImage,back:&image::Rgba<u8>,square:(u32,u32,u32,u32)) {
 	let (xmin,ymin,sx,sy) = square;
 	let xmax = xmin+sx+1;
