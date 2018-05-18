@@ -129,42 +129,24 @@ fn main() {
 				p.angle = angle;
 				println!("+++> {:?} => {:?}",p.id,angle);
 				step3_rotate::draw_best_rectangle(&mut p.mask,angle);
-			});
-		}
-	});
 
-	//save list
-	if dump {
-		pool.scoped(|scope| {
-			for p in all.iter() {
-				scope.execute(move || {
+				//save
+				if dump {
 					p.save(2,"extract");
-				});
-			}
-		});
-	}
+				}
 
-	//rotate
-	pool.scoped(|scope| {
-		for p in all.iter_mut() {
-			scope.execute(move || {
+				//rotate
 				println!("Rotate {:?}",p.id);
 				p.mask = step3_rotate::do_rotate_gray(& p.mask,p.angle);
 				p.image = step3_rotate::do_rotate_rgba(& p.image,p.angle);
+
+				//save
+				if dump {
+					p.save(3,"rotate");
+				}
 			});
 		}
 	});
-
-	//save list
-	if dump {
-		pool.scoped(|scope| {
-			for p in all.iter() {
-				scope.execute(move || {
-					p.save(3,"rotate");
-				});
-			}
-		});
-	}
 
 	//create output image
 	if dump {
