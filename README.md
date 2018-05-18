@@ -1,5 +1,7 @@
-Rust puzzle solver
-==================
+Rust puzzle solver (WORK IN PROGRESS)
+=====================================
+
+**CAUTION this is a work in progress !**
 
 This project is a fun project I made to learn Rust. The idea is to solve a puzzle by taking the pieces in photo on a white paper.
 
