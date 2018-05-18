@@ -23,6 +23,7 @@ fn calc_line_coord(img:&image::GrayImage,angle:u32,offset:u32) -> ((f32,f32),(f3
 	//middle of image
 	let (w,h) = img.dimensions();
 	let (xm,ym) = ((w/2) as f32,(h/2) as f32);
+	let ray = xm.max(ym);
 
 	//compute angle in radian
 	let rad = (angle as f32).to_radians();
@@ -34,8 +35,8 @@ fn calc_line_coord(img:&image::GrayImage,angle:u32,offset:u32) -> ((f32,f32),(f3
 
 	//compute extrem points
 	let opposite = rad + f32::consts::PI;
-	let (x0,y0) = (xm+xm*(opposite).cos()+shift_x,ym+ym*(opposite).sin()+shift_y);
-	let (x1,y1) = (xm+xm*(rad).cos()+shift_x,ym+ym*(rad).sin()+shift_y);
+	let (x0,y0) = (xm+ray*(opposite).cos()+shift_x,ym+ray*(opposite).sin()+shift_y);
+	let (x1,y1) = (xm+ray*(rad).cos()+shift_x,ym+ray*(rad).sin()+shift_y);
 
 	//ret
 	((x0,y0),(x1,y1))
@@ -48,6 +49,17 @@ pub fn draw_limit_line(img:&mut image::GrayImage,angle:u32,offset:u32) {
 
 	//draw line
 	imageproc::drawing::draw_line_segment_mut(img,start,end,image::Luma([255 as u8]));
+
+	//draw manuapply because imageproc cropping is buggy !
+	/*let color = image::Luma([255 as u8]);
+	let iter = imageproc::drawing::BresenhamLineIter::new(start,end);
+	let (w,h) = img.dimensions();
+	let (iw,ih) = (w as i32, h as i32);
+	for (x,y) in iter {
+		if x >= 0 && x < iw && y >= 0 && y < ih {
+			*img.get_pixel_mut(x as u32,y as u32) = color;
+		}
+	}*/
 }
 
 /// Check if the given line cover some interestsing pixel so we can consider searching the next
@@ -151,4 +163,31 @@ pub fn find_best_rectangle(img:&image::GrayImage) -> u32 {
 
 	//ret
 	angle_max
+}
+
+/// Finally appply the rotation to get the image in right position
+pub fn do_rotate_gray(img:& image::GrayImage,angle:u32) -> image::GrayImage {
+	//calc center
+	let (w,h) = img.dimensions();
+	let center = ((w / 2) as f32,(h / 2) as f32);
+
+	//angle in radian
+	let angle: f32 = (-(angle as f32)).to_radians();
+
+	//rotate
+	//for mask we don't want interpolation to keep exact color for matchin
+	imageproc::affine::rotate(img,center,angle,imageproc::affine::Interpolation::Nearest)
+}
+
+/// Finally appply the rotation to get the image in right position
+pub fn do_rotate_rgba(img:& image::RgbaImage,angle:u32) -> image::RgbaImage {
+	//calc center
+	let (w,h) = img.dimensions();
+	let center = ((w / 2) as f32,(h / 2) as f32);
+
+	//angle in radian
+	let angle: f32 = (-(angle as f32)).to_radians();
+
+	//rotate
+	imageproc::affine::rotate(img,center,angle,imageproc::affine::Interpolation::Bilinear)
 }

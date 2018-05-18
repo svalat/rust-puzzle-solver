@@ -108,6 +108,9 @@ fn main() {
 				p.angle = angle;
 				println!("+++> {:?} => {:?}",p.id,angle);
 				step3_rotate::draw_best_rectangle(&mut p.mask,angle);
+				println!("Rotate");
+				p.mask = step3_rotate::do_rotate_gray(& p.mask,angle);
+				p.image = step3_rotate::do_rotate_rgba(& p.image,angle);
 			});
 		}
 	});
