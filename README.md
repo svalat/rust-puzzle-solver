@@ -27,7 +27,8 @@ You can then run on one image :
 ./target/release/rust-puzzle-solver tests/really-harder-1.png
 ```
 
-It will output pictures into the current directory with solution and steps of the solver to help debugging.
+If you add option `--dump` will output pictures into the current directory with solution and steps of the solver to help debugging.
+You can also control the number of threads with `--threads`.
 
 Licence
 -------

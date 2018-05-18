@@ -10,6 +10,10 @@
 extern crate image;
 extern crate imageproc;
 extern crate scoped_pool;
+extern crate argparse;
+
+//arg parse
+use argparse::{ArgumentParser, StoreTrue, Store, List};
 
 //modules
 mod piece;
@@ -17,7 +21,6 @@ mod step1_detect;
 mod step3_rotate;
 
 //load std
-use std::env;
 use std::fs::File;
 use std::path::Path;
 
@@ -32,12 +35,30 @@ fn main() {
 	//info
 	println!("rust-puzzle-solver-0.1.0");
 
-	//load path
-	let file = if env::args().count() == 2 {
-        env::args().nth(1).unwrap()
-    } else {
-        panic!("Please enter a file")
-    };
+	//parse args
+	let mut dump = false;
+	let mut threads = 4;
+	let mut files:Vec<String> = vec!();
+	{
+		let mut ap = ArgumentParser::new();
+		ap.set_description("Puzzle solver from picture considering a white background bellow the pieces and enough margins arround the pieces.");
+        ap.refer(&mut dump)
+            .add_option(&["-d", "--dump"], StoreTrue,
+				"Dump the picture for every step");
+		ap.refer(&mut threads)
+			.add_option(&["-t", "--threads"], Store,
+				"Number of threads to use (default: 4)");
+		ap.refer(&mut files)
+            .add_argument("FILES", List,
+                "List of files to parse (support only 1 now)");
+		ap.parse_args_or_exit();
+	}
+
+	//check
+	if files.len() != 1 {
+		panic!("Invalid number of files, should be exactly one !")
+	}
+	let file = &files[0];
 
 	//load image
 	println!("Load image {:?}",file);
@@ -98,7 +119,7 @@ fn main() {
 	}
 
 	//create pool
-	let pool = Pool::new(4);
+	let pool = Pool::new(threads);
 
 	//down line
 	pool.scoped(|scope| {
@@ -113,13 +134,15 @@ fn main() {
 	});
 
 	//save list
-	pool.scoped(|scope| {
-		for p in all.iter() {
-			scope.execute(move || {
-				p.save(2,"extract");
-			});
-		}
-	});
+	if dump {
+		pool.scoped(|scope| {
+			for p in all.iter() {
+				scope.execute(move || {
+					p.save(2,"extract");
+				});
+			}
+		});
+	}
 
 	//rotate
 	pool.scoped(|scope| {
@@ -133,17 +156,21 @@ fn main() {
 	});
 
 	//save list
-	pool.scoped(|scope| {
-		for p in all.iter() {
-			scope.execute(move || {
-				p.save(3,"rotate");
-			});
-		}
-	});
+	if dump {
+		pool.scoped(|scope| {
+			for p in all.iter() {
+				scope.execute(move || {
+					p.save(3,"rotate");
+				});
+			}
+		});
+	}
 
 	//create output image
-	let ref mut fout = File::create("step-1-detect.png").unwrap();
+	if dump {
+		let ref mut fout = File::create("step-1-detect.png").unwrap();
+		//write to file
+		img.write_to(fout, image::PNG).unwrap();
+	}
 
-	//write to file
-	img.write_to(fout, image::PNG).unwrap();
-}
+	}
