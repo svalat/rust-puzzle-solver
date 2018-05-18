@@ -79,9 +79,9 @@ impl Piece {
 	}
 
 	/// Save the image and mask into files for debugging.
-	pub fn save(self: &Piece) {
+	pub fn save(self: &Piece, step: u32, name: &str) {
 		//build base name
-		let base = format!("step-2-extract-{:?}",self.id);
+		let base = format!("step-{}-{}-{}",step,name,self.id);
 
 		//export image
 		{
