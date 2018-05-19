@@ -19,6 +19,7 @@ use argparse::{ArgumentParser, Store, List};
 mod piece;
 mod step1_detect;
 mod step3_rotate;
+mod step4_bump_hidding;
 
 //load std
 use std::fs::File;
@@ -150,6 +151,15 @@ fn main() {
 				//save
 				if dump == 0 || dump == 3 {
 					p.save(3,"rotate");
+				}
+
+				//remove bumps
+				println!("Remove bumps");
+				step4_bump_hidding::remove_bumps(&mut p.mask);
+
+				//save
+				if dump == 0 || dump == 4 {
+					p.save(4,"remove-bump");
 				}
 			});
 		}
