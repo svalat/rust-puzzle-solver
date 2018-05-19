@@ -133,7 +133,7 @@ fn extract_surrounding_rect(img: &image::GrayImage) -> (u32,u32,u32,u32) {
 	(xmin,ymin,xmax,ymax)
 }
 
-fn draw_point(img: &mut image::GrayImage,coord: (u32,u32)) {
+pub fn draw_point(img: &mut image::GrayImage,coord: (u32,u32)) {
 	//vars
 	let pinterest = image::Luma([common::MASK_POINTS_INTREST]);
 	let pback = image::Luma([common::MASK_POINTS_BACK]);

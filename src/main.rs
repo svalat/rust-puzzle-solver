@@ -17,7 +17,7 @@ mod piece;
 mod step1_detect;
 mod step3_rotate;
 mod step4_bump;
-mod step5_points;
+mod step5_corners;
 mod common;
 
 //arg parse
@@ -165,13 +165,13 @@ fn main() {
 				}
 
 				//extract points
-				println!("Extract interesting points");
-				p.points = step5_points::extract_piece_points(&p.mask);
-				step5_points::draw_corners(&mut p.mask,&p.points);
+				println!("Extract corners");
+				p.points = step5_corners::extract_piece_points(&p.mask);
+				step5_corners::draw_corners(&mut p.mask,&p.points);
 
 				//save
 				if dump == 0 || dump == 5 {
-					p.save(5,"points");
+					p.save(5,"corners");
 				}
 			});
 		}
