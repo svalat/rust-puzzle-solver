@@ -12,6 +12,9 @@ extern crate image;
 //from internal
 use common;
 
+//std
+use std::u32;
+
 //from image
 use image::GrayImage;
 use image::RgbaImage;
@@ -36,6 +39,15 @@ pub struct PieceSideInfos {
 	pub bottom: PieceSideType,
 }
 
+/// Coordinate for intersting points
+#[derive(Debug)]
+pub struct PiecePoints {
+	pub top_left_corner: (u32,u32),
+	pub top_right_corner: (u32,u32),
+	pub bottom_left_corner: (u32,u32),
+	pub bottom_right_corner: (u32,u32),
+}
+
 /// Define a piece of the puzzle, this consist in an ID, a position in the global picture (rectangle)
 /// and the extracted image of the peice in color with margins to later rotate it. It also contain
 /// a mask of the piece in gray color to faster (instead of using RGB) scan the piece for all later 
@@ -47,6 +59,19 @@ pub struct Piece {
 	pub mask: GrayImage,
 	pub angle: u32,
 	pub side_infos: PieceSideInfos,
+	pub points: PiecePoints,
+}
+
+impl PiecePoints {
+	/// Constructor to init coords
+	pub fn new() -> Self {
+		Self {
+			top_left_corner: (u32::MAX,u32::MAX),
+			top_right_corner: (u32::MAX,u32::MAX),
+			bottom_left_corner: (u32::MAX,u32::MAX),
+			bottom_right_corner: (u32::MAX,u32::MAX),
+		}
+	}
 }
 
 impl PieceSideInfos {
@@ -80,6 +105,7 @@ impl Piece {
 			mask: GrayImage::new(ww,hh),
 			angle: 0,
 			side_infos: PieceSideInfos::new(),
+			points: PiecePoints::new(),
 		};
 
 		//init images
