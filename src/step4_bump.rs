@@ -6,6 +6,8 @@
              LICENSE  : CeCILL-C
 *****************************************************/
 
+/// Detect bumps and holes arround the piece and make them another color, this will help to extract corners for the piece.
+
 //load external
 extern crate image;
 

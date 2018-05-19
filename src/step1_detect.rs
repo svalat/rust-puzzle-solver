@@ -6,6 +6,8 @@
              LICENSE  : CeCILL-C
 *****************************************************/
 
+/// This module is used to implement the search of the pieces in the picture.
+
 //load external
 extern crate image;
 

@@ -6,6 +6,8 @@
              LICENSE  : CeCILL-C
 *****************************************************/
 
+/// This module implement the rotation of the piece to put them in an optimized orientation for next algorithms.
+
 //load external
 extern crate image;
 extern crate imageproc;
