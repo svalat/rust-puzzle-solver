@@ -46,6 +46,10 @@ pub struct PiecePoints {
 	pub top_right_corner: (u32,u32),
 	pub bottom_left_corner: (u32,u32),
 	pub bottom_right_corner: (u32,u32),
+	pub top_shape: (u32,u32),
+	pub bottom_shape: (u32,u32),
+	pub right_shape: (u32,u32),
+	pub left_shape: (u32,u32),
 }
 
 /// Define a piece of the puzzle, this consist in an ID, a position in the global picture (rectangle)
@@ -70,6 +74,10 @@ impl PiecePoints {
 			top_right_corner: (u32::MAX,u32::MAX),
 			bottom_left_corner: (u32::MAX,u32::MAX),
 			bottom_right_corner: (u32::MAX,u32::MAX),
+			top_shape: (u32::MAX,u32::MAX),
+			bottom_shape: (u32::MAX,u32::MAX),
+			right_shape: (u32::MAX,u32::MAX),
+			left_shape: (u32::MAX,u32::MAX),
 		}
 	}
 }

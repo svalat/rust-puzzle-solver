@@ -18,6 +18,7 @@ mod step1_detect;
 mod step3_rotate;
 mod step4_bump;
 mod step5_corners;
+mod step6_hbpoints;
 mod common;
 
 //arg parse
@@ -172,6 +173,16 @@ fn main() {
 				//save
 				if dump == 0 || dump == 5 {
 					p.save(5,"corners");
+				}
+
+				//extract points
+				println!("Extract holes/bump points");
+				step6_hbpoints::extract_piece_points(&p.mask,&mut p.points,&p.side_infos);
+				step6_hbpoints::draw_corners(&mut p.mask,&p.points);
+
+				//save
+				if dump == 0 || dump == 6 {
+					p.save(6,"hbpoints");
 				}
 			});
 		}

@@ -6,7 +6,7 @@
              LICENSE  : CeCILL-C
 *****************************************************/
 
-/// Search the special points of the piece : corners and bump/hole extrem point. This will be usefull to pre-match the sides
+/// Search the corners. This will be usefull to pre-match the sides
 /// before doing pixel matching with the two pictures.
 
 //load external
@@ -98,7 +98,7 @@ fn search_corner(img: &image::GrayImage,start: (u32,u32),step: (i32,i32),steps: 
 	coord
 }
 
-fn extract_surrounding_rect(img: &image::GrayImage) -> (u32,u32,u32,u32) {
+pub fn extract_surrounding_rect(img: &image::GrayImage) -> (u32,u32,u32,u32) {
 	//vars
 	let mut xmin = u32::MAX;
 	let mut xmax = 0;
@@ -140,15 +140,17 @@ pub fn draw_point(img: &mut image::GrayImage,coord: (u32,u32)) {
 	let color = image::Luma([common::MASK_BACKGROUND]);
 
 	//draw
-	let nb:i32 = 5;
-	for x in -nb..nb {
-		for y in -nb..nb {
-			let x = (coord.0 as i32+x) as u32;
-			let y = (coord.1 as i32+y) as u32;
-			if *img.get_pixel(x,y) == color {
-				img.put_pixel(x,y,pback);
-			} else {
-				img.put_pixel(x,y,pinterest);
+	if coord.0 != u32::MAX && coord.1 != u32::MAX {
+		let nb:i32 = 5;
+		for x in -nb..nb {
+			for y in -nb..nb {
+				let x = (coord.0 as i32+x) as u32;
+				let y = (coord.1 as i32+y) as u32;
+				if *img.get_pixel(x,y) == color {
+					img.put_pixel(x,y,pback);
+				} else {
+					img.put_pixel(x,y,pinterest);
+				}
 			}
 		}
 	}
