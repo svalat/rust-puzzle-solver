@@ -11,6 +11,7 @@ extern crate image;
 
 //internal
 use common;
+use piece::PieceSideInfos;
 
 //consts
 const BUMP_SEGMENTS: u32 = 20;
@@ -155,7 +156,7 @@ fn remove_bump_one_side(img: &mut image::GrayImage,start:(u32,u32),step:(u32,u32
         }
     }
 
-	if cnt_bump_line >= size_op / 6 {
+	if cnt_bump_line >= size_op / BUMP_SEGMENTS {
     	true
 	} else {
 		false
@@ -163,11 +164,20 @@ fn remove_bump_one_side(img: &mut image::GrayImage,start:(u32,u32),step:(u32,u32
 }
 
 /// Remove bump on 4 sides
-pub fn remove_bumps(img: &mut image::GrayImage) {
+pub fn remove_bumps(img: &mut image::GrayImage) -> PieceSideInfos {
+	//vars
     let (w,h) = img.dimensions();
+	let mut infos = PieceSideInfos::new();
 
-    remove_bump_one_side(img,(0,0),(1,0),(0,1),w,h);
-    remove_bump_one_side(img,(0,0),(0,1),(1,0),h,w);
-    remove_bump_one_side(img,(0,h-1),(1,0),(0,-1),w,h);
-    remove_bump_one_side(img,(w-1,0),(0,1),(-1,0),h,w);
+	//all side
+    infos.top = remove_bump_one_side(img,(0,0),(1,0),(0,1),w,h);
+    infos.left = remove_bump_one_side(img,(0,0),(0,1),(1,0),h,w);
+    infos.bottom = remove_bump_one_side(img,(0,h-1),(1,0),(0,-1),w,h);
+    infos.right = remove_bump_one_side(img,(w-1,0),(0,1),(-1,0),h,w);
+
+	//debug
+	//println!("Bump detected : {:?}",infos);
+
+	//ret
+	infos
 }

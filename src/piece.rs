@@ -19,6 +19,15 @@ use image::RgbaImage;
 //consts
 const EXTRACT_MARGINS: u32 = 30;
 
+/// Structure to remember which side is bump and which is hole (true for bump)
+#[derive(Debug)]
+pub struct PieceSideInfos {
+	pub left: bool,
+	pub right: bool,
+	pub top: bool,
+	pub bottom: bool,
+}
+
 /// Define a piece of the puzzle, this consist in an ID, a position in the global picture (rectangle)
 /// and the extracted image of the peice in color with margins to later rotate it. It also contain
 /// a mask of the piece in gray color to faster (instead of using RGB) scan the piece for all later 
@@ -29,6 +38,19 @@ pub struct Piece {
 	pub image: RgbaImage,
 	pub mask: GrayImage,
 	pub angle: u32,
+	pub side_infos: PieceSideInfos,
+}
+
+impl PieceSideInfos {
+	/// Constructor to init side infos
+	pub fn new() -> Self {
+		Self {
+			left: false,
+			right: false,
+			top: false,
+			bottom: false,
+		}
+	}
 }
 
 impl Piece {
@@ -49,6 +71,7 @@ impl Piece {
 			image: RgbaImage::new(ww,hh),
 			mask: GrayImage::new(ww,hh),
 			angle: 0,
+			side_infos: PieceSideInfos::new(),
 		};
 
 		//init images

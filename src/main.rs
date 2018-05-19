@@ -12,15 +12,15 @@ extern crate imageproc;
 extern crate scoped_pool;
 extern crate argparse;
 
-//arg parse
-use argparse::{ArgumentParser, Store, List};
-
 //modules
 mod piece;
 mod step1_detect;
 mod step3_rotate;
 mod step4_bump;
 mod common;
+
+//arg parse
+use argparse::{ArgumentParser, Store, List};
 
 //load std
 use std::fs::File;
@@ -156,7 +156,7 @@ fn main() {
 
 				//remove bumps
 				println!("Remove bumps");
-				step4_bump::remove_bumps(&mut p.mask);
+				p.side_infos = step4_bump::remove_bumps(&mut p.mask);
 
 				//save
 				if dump == 0 || dump == 4 {
