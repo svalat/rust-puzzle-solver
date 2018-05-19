@@ -178,7 +178,7 @@ pub fn remove_bumps(img: &mut image::GrayImage) -> PieceSideInfos {
     infos.right = remove_bump_one_side(img,(w-1,0),(0,1),(-1,0),h,w);
 
 	//debug
-	//println!("Bump detected : {:?}",infos);
+	println!("Bump detected : {:?}",infos);
 
 	//ret
 	infos

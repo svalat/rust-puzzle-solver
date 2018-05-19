@@ -138,7 +138,7 @@ fn main() {
 			scope.execute(move || {
 				let angle = step3_rotate::find_best_rectangle(&p.mask);
 				p.angle = angle;
-				println!("+++> {:?} => {:?}",p.id,angle);
+				println!("=============> {:?} => {:?} <==============",p.id,angle);
 				step3_rotate::draw_best_rectangle(&mut p.mask,angle);
 
 				//save
