@@ -11,7 +11,7 @@ extern crate image;
 
 //internal
 use common;
-use piece::PieceSideInfos;
+use piece::{PieceSideInfos,PieceSideType};
 
 //consts
 const BUMP_SEGMENTS: u32 = 20;
@@ -123,7 +123,7 @@ fn check_and_mask_bump(img: &mut image::GrayImage,start:(u32,u32),step:(u32,u32)
 }
 
 /// Remove bump on one side
-fn remove_bump_one_side(img: &mut image::GrayImage,start:(u32,u32),step:(u32,u32),step_op:(i32,i32),size:u32,size_op:u32) -> bool {
+fn remove_bump_one_side(img: &mut image::GrayImage,start:(u32,u32),step:(u32,u32),step_op:(i32,i32),size:u32,size_op:u32) -> PieceSideType {
     //find first none empty line
     let color = image::Luma([common::MASK_PIECE_PIXEL]);
     let mut pos = 0;
@@ -157,9 +157,9 @@ fn remove_bump_one_side(img: &mut image::GrayImage,start:(u32,u32),step:(u32,u32
     }
 
 	if cnt_bump_line >= size_op / BUMP_SEGMENTS {
-    	true
+    	PieceSideType::Bump
 	} else {
-		false
+		PieceSideType::Hole
 	}
 }
 

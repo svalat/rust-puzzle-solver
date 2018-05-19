@@ -19,13 +19,21 @@ use image::RgbaImage;
 //consts
 const EXTRACT_MARGINS: u32 = 30;
 
+//side type
+#[derive(Debug)]
+pub enum PieceSideType {
+	Hole,
+	Bump,
+	Unknown,
+}
+
 /// Structure to remember which side is bump and which is hole (true for bump)
 #[derive(Debug)]
 pub struct PieceSideInfos {
-	pub left: bool,
-	pub right: bool,
-	pub top: bool,
-	pub bottom: bool,
+	pub left: PieceSideType,
+	pub right: PieceSideType,
+	pub top: PieceSideType,
+	pub bottom: PieceSideType,
 }
 
 /// Define a piece of the puzzle, this consist in an ID, a position in the global picture (rectangle)
@@ -45,10 +53,10 @@ impl PieceSideInfos {
 	/// Constructor to init side infos
 	pub fn new() -> Self {
 		Self {
-			left: false,
-			right: false,
-			top: false,
-			bottom: false,
+			left: PieceSideType::Unknown,
+			right: PieceSideType::Unknown,
+			top: PieceSideType::Unknown,
+			bottom: PieceSideType::Unknown,
 		}
 	}
 }
