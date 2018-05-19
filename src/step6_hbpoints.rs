@@ -24,6 +24,7 @@ use std::cmp;
 
 fn find_first_bump_point(img: &image::GrayImage,start:(u32,u32),step:(u32,u32),steps:u32) -> (u32,u32) {
 	let color = image::Luma([common::MASK_HIDDEN_BUMP]);
+	let mut found: Vec<u32> = vec!();
 	let mut coord = (0,0);
 	
 	for i in 0..steps {
@@ -31,9 +32,17 @@ fn find_first_bump_point(img: &image::GrayImage,start:(u32,u32),step:(u32,u32),s
 		let y = start.1 + i * step.1;
 
 		if *img.get_pixel(x,y) == color {
-			coord = (x,y);
-			break;
+			found.push(i);
 		}
+	}
+
+	//take middle point
+	if !found.is_empty() {
+		let index = found.len() / 2;
+		let i = found[index];
+		let x = start.0 + i * step.0;
+		let y = start.1 + i * step.1;
+		coord = (x,y);
 	}
 
 	coord
