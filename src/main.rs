@@ -13,7 +13,7 @@ extern crate scoped_pool;
 extern crate argparse;
 
 //arg parse
-use argparse::{ArgumentParser, StoreTrue, Store, List};
+use argparse::{ArgumentParser, Store, List};
 
 //modules
 mod piece;
@@ -36,15 +36,15 @@ fn main() {
 	println!("rust-puzzle-solver-0.1.0");
 
 	//parse args
-	let mut dump = false;
+	let mut dump:i32 = -1;
 	let mut threads = 4;
 	let mut files:Vec<String> = vec!();
 	{
 		let mut ap = ArgumentParser::new();
 		ap.set_description("Puzzle solver from picture considering a white background bellow the pieces and enough margins arround the pieces.");
         ap.refer(&mut dump)
-            .add_option(&["-d", "--dump"], StoreTrue,
-				"Dump the picture for every step");
+            .add_option(&["-d", "--dump"], Store,
+				"Dump the picture for given step, use 0 for all");
 		ap.refer(&mut threads)
 			.add_option(&["-t", "--threads"], Store,
 				"Number of threads to use (default: 4)");
@@ -118,6 +118,13 @@ fn main() {
 		}
 	}
 
+	//create output image
+	if dump == 0 || dump == 1 {
+		let ref mut fout = File::create("step-1-detect.png").unwrap();
+		//write to file
+		img.write_to(fout, image::PNG).unwrap();
+	}
+
 	//create pool
 	let pool = Pool::new(threads);
 
@@ -131,7 +138,7 @@ fn main() {
 				step3_rotate::draw_best_rectangle(&mut p.mask,angle);
 
 				//save
-				if dump {
+				if dump == 0 || dump == 2 {
 					p.save(2,"extract");
 				}
 
@@ -141,18 +148,11 @@ fn main() {
 				p.image = step3_rotate::do_rotate_rgba(& p.image,p.angle);
 
 				//save
-				if dump {
+				if dump == 0 || dump == 3 {
 					p.save(3,"rotate");
 				}
 			});
 		}
 	});
-
-	//create output image
-	if dump {
-		let ref mut fout = File::create("step-1-detect.png").unwrap();
-		//write to file
-		img.write_to(fout, image::PNG).unwrap();
-	}
 
 	}
