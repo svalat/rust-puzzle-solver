@@ -9,6 +9,9 @@
 //load external
 extern crate image;
 
+//from internal
+use common;
+
 //from image
 use image::GrayImage;
 use image::RgbaImage;
@@ -52,7 +55,7 @@ impl Piece {
 		for pixel in cur.image.pixels_mut() {
 			*pixel = *back;
 		}
-		let b = image::Luma([0 as u8]);
+		let b = image::Luma([common::MASK_BACKGROUND]);
 		for pixel in cur.mask.pixels_mut() {
 			*pixel = b;
 		}
@@ -65,7 +68,7 @@ impl Piece {
 		}
 
 		//build mask
-		let col = image::Luma([128u8]);
+		let col = image::Luma([common::MASK_PIECE_PIXEL]);
 		for y in 0..h {
 			for x in 0..w {
 				if img.get_pixel(x0+x,y0+y) != back {

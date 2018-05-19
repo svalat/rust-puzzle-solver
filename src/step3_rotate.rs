@@ -10,6 +10,9 @@
 extern crate image;
 extern crate imageproc;
 
+//from internal
+use common;
+
 //load std
 use std::f32;
 use std::cmp;
@@ -48,18 +51,7 @@ pub fn draw_limit_line(img:&mut image::GrayImage,angle:u32,offset:u32) {
 	let (start,end) = calc_line_coord(&img,angle,offset);
 
 	//draw line
-	imageproc::drawing::draw_line_segment_mut(img,start,end,image::Luma([255 as u8]));
-
-	//draw manuapply because imageproc cropping is buggy !
-	/*let color = image::Luma([255 as u8]);
-	let iter = imageproc::drawing::BresenhamLineIter::new(start,end);
-	let (w,h) = img.dimensions();
-	let (iw,ih) = (w as i32, h as i32);
-	for (x,y) in iter {
-		if x >= 0 && x < iw && y >= 0 && y < ih {
-			*img.get_pixel_mut(x as u32,y as u32) = color;
-		}
-	}*/
+	imageproc::drawing::draw_line_segment_mut(img,start,end,image::Luma([common::MASK_SURROUND_RECT]));
 }
 
 /// Check if the given line cover some interestsing pixel so we can consider searching the next
@@ -70,7 +62,7 @@ fn check_limit_line(img:&image::GrayImage,angle:u32,offset:u32) -> bool {
 
 	//check if has something
 	let mut has_pixel = false;
-	let color = image::Luma([128 as u8]);
+	let color = image::Luma([common::MASK_PIECE_PIXEL]);
 	let iter = imageproc::drawing::BresenhamLineIter::new(start,end);
 	let (w,h) = img.dimensions();
 	let (iw,ih) = (w as i32, h as i32);

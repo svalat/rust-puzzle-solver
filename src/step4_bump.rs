@@ -9,6 +9,9 @@
 //load external
 extern crate image;
 
+//internal
+use common;
+
 //consts
 const BUMP_SEGMENTS: u32 = 20;
 
@@ -47,7 +50,7 @@ fn count_pixel_on_segment(img: &image::GrayImage,start:(u32,u32),step:(u32,u32),
 {
     //counter & color
     let mut cnt = 0;
-    let color = image::Luma([128u8]);
+    let color = image::Luma([common::MASK_PIECE_PIXEL]);
 
     //run over pixel of segment
     do_op_on_segment(start,step,size,seg_id,|x:u32,y:u32| {
@@ -103,8 +106,8 @@ fn check_and_mask_bump(img: &mut image::GrayImage,start:(u32,u32),step:(u32,u32)
         ret = true;
 
         //erase pixel
-        let color_exp = image::Luma([128u8]);
-        let color_set = image::Luma([64u8]);
+        let color_exp = image::Luma([common::MASK_PIECE_PIXEL]);
+        let color_set = image::Luma([common::MASK_HIDDEN_BUMP]);
         for i in 0..size {
             let x = start.0 + step.0 * i;
             let y = start.1 + step.1 * i;
@@ -121,7 +124,7 @@ fn check_and_mask_bump(img: &mut image::GrayImage,start:(u32,u32),step:(u32,u32)
 /// Remove bump on one side
 fn remove_bump_one_side(img: &mut image::GrayImage,start:(u32,u32),step:(u32,u32),step_op:(i32,i32),size:u32,size_op:u32) -> bool {
     //find first none empty line
-    let color = image::Luma([128u8]);
+    let color = image::Luma([common::MASK_PIECE_PIXEL]);
     let mut pos = 0;
     for j in 0..size_op {
         let start = ((start.0 as i32+step_op.0*j as i32) as u32,(start.1 as i32+step_op.1*j as i32) as u32);
@@ -141,18 +144,22 @@ fn remove_bump_one_side(img: &mut image::GrayImage,start:(u32,u32),step:(u32,u32
     //println!("Bump {:?} -> {:?} -> {:?}, pos = {:?}",start,step,size,pos);
     
     //loop until not bump anymore
-    let mut has_bump = false;
+	let mut cnt_bump_line = 0;
     for i in pos..size_op {
         let has = check_and_mask_bump(img,((start.0 as i32+i as i32*step_op.0) as u32,(start.1 as i32+i as i32*step_op.1) as u32),step,size);
         if has {
             //println!("Has bump");
-            has_bump = true;
+			cnt_bump_line += 1;
         } else {
             break;
         }
     }
 
-    has_bump
+	if cnt_bump_line >= size_op / 6 {
+    	true
+	} else {
+		false
+	}
 }
 
 /// Remove bump on 4 sides
