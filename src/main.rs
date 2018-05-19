@@ -167,7 +167,7 @@ fn main() {
 
 				//extract points
 				println!("Extract corners");
-				p.points = step5_corners::extract_piece_points(&p.mask);
+				p.points = step5_corners::extract_piece_points(&p.mask,&p.side_infos);
 				step5_corners::draw_corners(&mut p.mask,&p.points);
 
 				//save

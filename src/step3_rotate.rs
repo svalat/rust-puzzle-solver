@@ -56,6 +56,37 @@ pub fn draw_limit_line(img:&mut image::GrayImage,angle:u32,offset:u32) {
 	imageproc::drawing::draw_line_segment_mut(img,start,end,image::Luma([common::MASK_SURROUND_RECT]));
 }
 
+#[allow(dead_code)]
+fn calc_touched_points(img: &image::GrayImage,angle:u32,offset:u32) -> u32 {
+	//coords
+	let (start,end) = calc_line_coord(&img,angle,offset-1);
+	let mut cnt = 0;
+
+	//check if has something
+	let color = image::Luma([common::MASK_PIECE_PIXEL]);
+	let iter = imageproc::drawing::BresenhamLineIter::new(start,end);
+	let (w,h) = img.dimensions();
+	let (iw,ih) = (w as i32, h as i32);
+	let mut last = -1;
+	for (x,y) in iter {
+		if x >= 0 && x < iw && y >= 0 && y < ih {
+			if *img.get_pixel(x as u32,y as u32) == color {
+				//cnt += 1;
+				if last >= 40 {
+					cnt += 1;
+				}
+				last = 0;
+			} else {
+				if last >= 0 {
+					last += 1;
+				}
+			}
+		}
+	}
+
+	cnt
+}
+
 /// Check if the given line cover some interestsing pixel so we can consider searching the next
 /// one to build the rectangle surrounding the object to rotate.
 fn check_limit_line(img:&image::GrayImage,angle:u32,offset:u32) -> bool {
@@ -134,6 +165,12 @@ pub fn find_best_rectangle(img:&image::GrayImage) -> u32 {
 		let offset3 = find_limit_offset(&img,angle+90);
 		let offset4 = find_limit_offset(&img,angle+90+180);
 
+		//touched pixels
+		//let touched1 = calc_touched_points(&img,angle,offset1);
+		//let touched2 = calc_touched_points(&img,angle+180,offset2);
+		//let touched3 = calc_touched_points(&img,angle+90,offset3);
+		//let touched4 = calc_touched_points(&img,angle+90+180,offset4);
+
 		//compute rect
 		let axe1 = offset1 + offset2;
 		let axe2 = offset3 + offset4;
@@ -144,6 +181,8 @@ pub fn find_best_rectangle(img:&image::GrayImage) -> u32 {
 
 		//ratio
 		let ratio = axe_max as f32/axe_min as f32;
+		//let ratio = (touched1 + touched2 + touched3 + touched4) as f32;
+		//println!("--------- RATIO {}",ratio);
 
 		//extract max
 		if ratio > ratio_max {
@@ -154,6 +193,8 @@ pub fn find_best_rectangle(img:&image::GrayImage) -> u32 {
 		//inc for next step
 		angle = angle + ANGLE_RESOLUTION;
 	}
+
+	//println!("--------- RATIO {}",ratio_max);
 
 	//ret
 	angle_max

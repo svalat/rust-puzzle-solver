@@ -104,7 +104,7 @@ fn check_and_mask_bump(img: &mut image::GrayImage,start:(u32,u32),step:(u32,u32)
 
     //check if is bump
     let threashold = BUMP_SEGMENTS / 6;
-    if cur == BUMP_SEGMENTS as usize && cnt_empty_start >= threashold && cnt_bump >= 1 && cnt_bump < BUMP_SEGMENTS / 2 && cnt_empty_end >= threashold {
+    if cur >= BUMP_SEGMENTS as usize && cnt_empty_start >= threashold && cnt_bump >= 1 && cnt_bump < BUMP_SEGMENTS / 2 && cnt_empty_end >= threashold {
         //mark as bump
         ret = true;
 

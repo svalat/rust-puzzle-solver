@@ -14,7 +14,7 @@ extern crate image;
 
 //internal
 use common;
-use piece::PiecePoints;
+use piece::{PiecePoints,PieceSideInfos,PieceSideType};
 
 //std
 use std::f32;
@@ -33,6 +33,7 @@ fn search_closer_point_on_line(img: &image::GrayImage,ref_point: (u32,u32),start
 	let (x0,y0) = (start.0 as i32,start.1 as i32);
 	let (rx0,ry0) = (ref_point.0 as i32,ref_point.1 as i32);
 	let color = image::Luma([common::MASK_PIECE_PIXEL]);
+	let color2 = image::Luma([common::MASK_HIDDEN_BUMP]);
 
 	//loop
 	for i in 0..steps {
@@ -47,7 +48,8 @@ fn search_closer_point_on_line(img: &image::GrayImage,ref_point: (u32,u32),start
 			let uy: u32 = y as u32;
 
 			//check pixel
-			if *img.get_pixel(ux,uy) == color {
+			let p = img.get_pixel(ux,uy);
+			if *p == color || *p == color2 {
 				//calc distance
 				let dx = x - rx0;
 				let dy = y - ry0;
@@ -164,7 +166,26 @@ pub fn draw_corners(img: &mut image::GrayImage,points: &PiecePoints) {
 	draw_point(img,points.bottom_right_corner);
 }
 
-pub fn extract_piece_points(img: &image::GrayImage) -> PiecePoints {
+fn get_bump_offset(typex: &PieceSideType, typey: &PieceSideType,w:u32) -> (u32,u32) {
+	let retx: u32;
+	let rety: u32;
+
+	match typex {
+		PieceSideType::Bump => retx = w,
+		PieceSideType::Hole => retx = 0,
+		PieceSideType::Unknown => retx = 0,
+	}
+
+	match typey {
+		PieceSideType::Bump => rety = w,
+		PieceSideType::Hole => rety = 0,
+		PieceSideType::Unknown => rety = 0,
+	}
+
+	(retx,rety)
+}
+
+pub fn extract_piece_points(img: &image::GrayImage,side_infos: &PieceSideInfos) -> PiecePoints {
 	//vars
 	let mut points = PiecePoints::new();
 
@@ -175,10 +196,17 @@ pub fn extract_piece_points(img: &image::GrayImage) -> PiecePoints {
 	println!("Rect {:?}",(xmin,ymin,xmax,ymax));
 
 	//search them
-	points.top_left_corner = search_corner(img,(xmin,ymin),(1,1),steps);
-	points.top_right_corner = search_corner(img,(xmax,ymin),(-1,1),steps);
-	points.bottom_left_corner = search_corner(img,(xmin,ymax),(1,-1),steps);
-	points.bottom_right_corner = search_corner(img,(xmax,ymax),(-1,-1),steps);
+	let (ox,oy) = get_bump_offset(&side_infos.left,&side_infos.top,steps/4);
+	points.top_left_corner = search_corner(img,(xmin+ox,ymin+oy),(1,1),steps);
+
+	let (ox,oy) = get_bump_offset(&side_infos.right,&side_infos.top,steps/4);
+	points.top_right_corner = search_corner(img,(xmax-ox,ymin+oy),(-1,1),steps);
+
+	let (ox,oy) = get_bump_offset(&side_infos.left,&side_infos.bottom,steps/4);
+	points.bottom_left_corner = search_corner(img,(xmin+ox,ymax-oy),(1,-1),steps);
+
+	let (ox,oy) = get_bump_offset(&side_infos.right,&side_infos.bottom,steps/4);
+	points.bottom_right_corner = search_corner(img,(xmax-ox,ymax-oy),(-1,-1),steps);
 
 	//print
 	println!("Points : {:?}",points);	
