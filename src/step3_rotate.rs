@@ -19,9 +19,6 @@ use common;
 use std::f32;
 use std::cmp;
 
-//consts
-const ANGLE_RESOLUTION: u32 = 1;
-
 /// Calculate the coordinate of a line turned from a given angle and at offset distance of the
 /// image center.
 fn calc_line_coord(img:&image::GrayImage,angle:u32,offset:u32) -> ((f32,f32),(f32,f32)) {
@@ -191,7 +188,7 @@ pub fn find_best_rectangle(img:&image::GrayImage) -> u32 {
 		}
 
 		//inc for next step
-		angle = angle + ANGLE_RESOLUTION;
+		angle = angle + common::ROTATE_ANGLE_RESOLUTION;
 	}
 
 	//println!("--------- RATIO {}",ratio_max);

@@ -24,3 +24,7 @@ pub const QUALITY_BUMP_HOLE_CUT4: f32 = 18.0;
 
 //fix
 pub const FIX_MIN_QUALITY: u32 = 16;
+
+//consts
+pub const ROTATE_ANGLE_RESOLUTION: u32 = 1;
+pub const FIX_ROTATE_ANGLE_RESOLUTION: u32 = 2;

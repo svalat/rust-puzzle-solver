@@ -55,7 +55,9 @@ pub fn fix_bad_quality(pool: &Pool,all: &Vec<Arc<Mutex<piece::Piece>>>,file:&str
 
 			//brut force all angles in parallel
 			pool.scoped(|scope| {
-				for angle in 0..90 {
+                let steps = 90 / common::FIX_ROTATE_ANGLE_RESOLUTION;
+				for step in 0..steps {
+                    let angle = step * common::FIX_ROTATE_ANGLE_RESOLUTION;
 					let rgba = Arc::clone(&rgba);
 					let best = Arc::clone(&best);
 					scope.execute(move || {
