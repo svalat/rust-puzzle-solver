@@ -21,6 +21,7 @@ mod step5_corners;
 mod step6_hbpoints;
 mod step7_quality;
 mod step8_fix;
+mod step9_cleanup;
 mod common;
 mod scan;
 
@@ -161,4 +162,17 @@ fn main() {
 	println!("===============================");
 	step8_fix::fix_bad_quality(&pool,&all,file,dump);
 
-	}
+	//cleanup
+	pool.scoped(|scope| {
+		for pp in all.iter_mut() {
+			scope.execute(move || {
+				let mut p = pp.lock().unwrap();
+				step9_cleanup::clear_debug_markers(&mut p.mask);
+				if dump == 0 || dump == 9 {
+					p.save(9,"cleanup");
+				}
+			});
+		}
+	});
+
+}
