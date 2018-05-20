@@ -82,18 +82,14 @@ pub fn fix_bad_quality(pool: &Pool,all: &Vec<Arc<Mutex<piece::Piece>>>,file:&str
 			{
 				//rebuild final piece
 				let rgba = rgba.read().unwrap();
-				let mut f = piece::Piece::new(&rgba,&background,position,id);
+				let mut f = pp.lock().unwrap();
+				f.load(&rgba,&background);
 				f.angle = best.lock().unwrap().1;
 				scan::scan_piece(&mut f, -1);
 
 				//dump
 				if dump == 0 || dump == 8 {
 					f.save(8,"fix");
-				}
-
-				//copy back to override list element
-				{
-					pp.lock().unwrap().load(&rgba,&background);
 				}
 			}
 		}
