@@ -23,13 +23,15 @@ use std::io::Write;
 
 //internal
 use step5_corners;
-use piece::{Piece,PiecePoints};
+use piece::{Piece,PiecePoints,PieceSideType,PieceSideInfos};
 
 //cut
 const CORNER_CUT1: f32 = 5.0;
 const CORNER_CUT2: f32 = 10.0;
 const BUMP_HOLE_CUT1: f32 = 5.0;
 const BUMP_HOLE_CUT2: f32 = 10.0;
+const BUMP_HOLE_CUT3: f32 = 12.0;
+const BUMP_HOLE_CUT4: f32 = 18.0;
 
 fn apply_cut(value: f32, cut1:f32, cut2:f32) -> u32 {
     let mut mark = 0;
@@ -39,6 +41,76 @@ fn apply_cut(value: f32, cut1:f32, cut2:f32) -> u32 {
     if value <= cut2 {
         mark += 1;
     }
+    mark
+}
+
+fn apply_cut_sup(value: f32, cut1:f32, cut2:f32) -> u32 {
+    let mut mark = 0;
+    if value >= cut1 {
+        mark += 1;
+    }
+    if value >= cut2 {
+        mark += 1;
+    }
+    mark
+}
+
+fn fix_bump_hole_sign(value:f32,t: &PieceSideType,sign:f32) -> f32 {
+    let mut ret = value;
+    match t {
+        PieceSideType::Bump => {},
+        PieceSideType::Hole => ret *= -1.0,
+        PieceSideType::Unknown => panic!("Should not append here !"),
+    }
+
+    ret * sign
+}
+
+fn check_holes_bumps_topo(p: &PiecePoints, t: &PieceSideInfos, size: (u32,u32), db: &mut Vec<f32>) -> u32 {
+    //extract
+    let (w,h) = (size.0 as f32,size.1 as f32);
+    let mut mark = 0;
+
+    //extract
+    let left1 = 100.0 * (p.left_shape.0 as f32 - p.top_left_corner.0 as f32 ) / w;
+    let left2 = 100.0 * (p.left_shape.0 as f32  - p.bottom_left_corner.0 as f32 ) / w;
+    let right1 = 100.0 * (p.right_shape.0 as f32  - p.top_right_corner.0 as f32 ) / w;
+    let right2 = 100.0 * (p.right_shape.0 as f32  - p.bottom_right_corner.0 as f32 ) / w;
+    let top1 = 100.0 * (p.top_shape.1 as f32  - p.top_left_corner.1 as f32 ) / h;
+    let top2 = 100.0 * (p.top_shape.1 as f32  - p.top_right_corner.1 as f32 ) / h;
+    let bottom1 = 100.0 * (p.bottom_shape.1 as f32  - p.bottom_left_corner.1 as f32 ) / h;
+    let bottom2 = 100.0 * (p.bottom_shape.1 as f32  - p.bottom_right_corner.1 as f32 ) / h;
+
+    //fix sign
+    let left1 = fix_bump_hole_sign(left1,&t.left,1.0);
+    let left2 = fix_bump_hole_sign(left2,&t.left,1.0);
+    let right1 = fix_bump_hole_sign(right1,&t.right,-1.0);
+    let right2 = fix_bump_hole_sign(right2,&t.right,-1.0);
+    let top1 = fix_bump_hole_sign(top1,&t.top,-1.0);
+    let top2 = fix_bump_hole_sign(top2,&t.top,-1.0);
+    let bottom1 = fix_bump_hole_sign(bottom1,&t.bottom,1.0);
+    let bottom2 = fix_bump_hole_sign(bottom2,&t.bottom,1.0);
+
+    //fill db
+    db.push(left1);
+    db.push(left2);
+    db.push(right1);
+    db.push(right2);
+    db.push(top1);
+    db.push(top2);
+    db.push(bottom1);
+    db.push(bottom2);
+
+    //mark
+    mark += apply_cut_sup(left1,BUMP_HOLE_CUT3,BUMP_HOLE_CUT4);
+    mark += apply_cut_sup(left2,BUMP_HOLE_CUT3,BUMP_HOLE_CUT4);
+    mark += apply_cut_sup(right1,BUMP_HOLE_CUT3,BUMP_HOLE_CUT4);
+    mark += apply_cut_sup(right2,BUMP_HOLE_CUT3,BUMP_HOLE_CUT4);
+    mark += apply_cut_sup(top1,BUMP_HOLE_CUT3,BUMP_HOLE_CUT4);
+    mark += apply_cut_sup(top2,BUMP_HOLE_CUT3,BUMP_HOLE_CUT4);
+    mark += apply_cut_sup(bottom1,BUMP_HOLE_CUT3,BUMP_HOLE_CUT4);
+    mark += apply_cut_sup(bottom2,BUMP_HOLE_CUT3,BUMP_HOLE_CUT4);
+
     mark
 }
 
@@ -115,6 +187,7 @@ pub fn calc_quality_mark(piece: &Piece, dump: i32) -> u32 {
     //apply
     mark += check_corners(&piece.points,size,&mut db);
     mark += check_holes_bumps(&piece.points,size,&mut db);
+    mark += check_holes_bumps_topo(&piece.points,&piece.side_infos,size,&mut db);
 
     //add mark
     db.push(mark as f32);

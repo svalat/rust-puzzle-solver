@@ -28,12 +28,59 @@ use argparse::{ArgumentParser, Store, List};
 //load std
 use std::fs::File;
 use std::path::Path;
+use std::sync::{Arc,Mutex};
 
 //pool
 use scoped_pool::Pool;
 
 //load image
 use image::GenericImage;
+
+//do the scan steps to extract info from images to prepare matching
+fn scan_piece(p: &mut piece::Piece, dump: i32) {
+	//rotate
+	println!("Rotate {:?}",p.id);
+	p.mask = step3_rotate::do_rotate_gray(& p.mask,p.angle);
+	p.image = step3_rotate::do_rotate_rgba(& p.image,p.angle);
+
+	//save
+	if dump == 0 || dump == 3 {
+		p.save(3,"rotate");
+	}
+
+	//remove bumps
+	println!("Remove bumps");
+	p.side_infos = step4_bump::remove_bumps(&mut p.mask);
+
+	//save
+	if dump == 0 || dump == 4 {
+		p.save(4,"remove-bump");
+	}
+
+	//extract points
+	println!("Extract corners");
+	p.points = step5_corners::extract_piece_points(&p.mask,&p.side_infos);
+	step5_corners::draw_corners(&mut p.mask,&p.points);
+
+	//save
+	if dump == 0 || dump == 5 {
+		p.save(5,"corners");
+	}
+
+	//extract points
+	println!("Extract holes/bump points");
+	step6_hbpoints::extract_piece_points(&p.mask,&mut p.points,&p.side_infos);
+	step6_hbpoints::draw_corners(&mut p.mask,&p.points);
+
+	//save
+	if dump == 0 || dump == 6 {
+		p.save(6,"hbpoints");
+	}
+
+	//check quality
+	p.quality = step7_quality::calc_quality_mark(&p,dump);
+	println!("Quality = {}",p.quality);
+}
 
 ///Main function to run the program.
 fn main() {
@@ -89,7 +136,7 @@ fn main() {
 	}
 
 	//list
-	let mut all: Vec<piece::Piece> = Vec::new();
+	let mut all: Vec<Arc<Mutex<piece::Piece>>> = Vec::new();
 
 	//find first black pixel
 	{
@@ -109,7 +156,7 @@ fn main() {
 					//extract into list
 					let (_,_,w,h) = square;
 					if w*h > 600 {
-						all.push(piece::Piece::new(rgba,&background,square,id));
+						all.push(Arc::new(Mutex::new(piece::Piece::new(rgba,&background,square,id))));
 						id = id + 1;
 					} else {
 						println!("IGNORE, too small !");
@@ -133,10 +180,11 @@ fn main() {
 	//create pool
 	let pool = Pool::new(threads);
 
-	//down line
+	//prepare pieces
 	pool.scoped(|scope| {
-		for p in all.iter_mut() {
+		for pp in all.iter_mut() {
 			scope.execute(move || {
+				let mut p = pp.lock().unwrap();
 				let angle = step3_rotate::find_best_rectangle(&p.mask);
 				p.angle = angle;
 				println!("=============> {:?} => {:?} <==============",p.id,angle);
@@ -147,48 +195,8 @@ fn main() {
 					p.save(2,"extract");
 				}
 
-				//rotate
-				println!("Rotate {:?}",p.id);
-				p.mask = step3_rotate::do_rotate_gray(& p.mask,p.angle);
-				p.image = step3_rotate::do_rotate_rgba(& p.image,p.angle);
-
-				//save
-				if dump == 0 || dump == 3 {
-					p.save(3,"rotate");
-				}
-
-				//remove bumps
-				println!("Remove bumps");
-				p.side_infos = step4_bump::remove_bumps(&mut p.mask);
-
-				//save
-				if dump == 0 || dump == 4 {
-					p.save(4,"remove-bump");
-				}
-
-				//extract points
-				println!("Extract corners");
-				p.points = step5_corners::extract_piece_points(&p.mask,&p.side_infos);
-				step5_corners::draw_corners(&mut p.mask,&p.points);
-
-				//save
-				if dump == 0 || dump == 5 {
-					p.save(5,"corners");
-				}
-
-				//extract points
-				println!("Extract holes/bump points");
-				step6_hbpoints::extract_piece_points(&p.mask,&mut p.points,&p.side_infos);
-				step6_hbpoints::draw_corners(&mut p.mask,&p.points);
-
-				//save
-				if dump == 0 || dump == 6 {
-					p.save(6,"hbpoints");
-				}
-
-				//check quality
-				p.quality = step7_quality::calc_quality_mark(&p,dump);
-				println!("Quality = {}",p.quality);
+				//do all jobs
+				scan_piece(&mut p, dump);
 			});
 		}
 	});
