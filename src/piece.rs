@@ -64,6 +64,7 @@ pub struct Piece {
 	pub angle: u32,
 	pub side_infos: PieceSideInfos,
 	pub points: PiecePoints,
+	pub quality: u32,
 }
 
 impl PiecePoints {
@@ -114,6 +115,7 @@ impl Piece {
 			angle: 0,
 			side_infos: PieceSideInfos::new(),
 			points: PiecePoints::new(),
+			quality: 0,
 		};
 
 		//init images
@@ -149,7 +151,7 @@ impl Piece {
 	/// Save the image and mask into files for debugging.
 	pub fn save(self: &Piece, step: u32, name: &str) {
 		//build base name
-		let base = format!("step-{}-{}-{}",step,name,self.id);
+		let base = format!("step-{}-{}-{:05}",step,name,self.id);
 
 		//export image
 		{

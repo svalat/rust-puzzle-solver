@@ -19,6 +19,7 @@ mod step3_rotate;
 mod step4_bump;
 mod step5_corners;
 mod step6_hbpoints;
+mod step7_quality;
 mod common;
 
 //arg parse
@@ -184,6 +185,10 @@ fn main() {
 				if dump == 0 || dump == 6 {
 					p.save(6,"hbpoints");
 				}
+
+				//check quality
+				p.quality = step7_quality::calc_quality_mark(&p,dump);
+				println!("Quality = {}",p.quality);
 			});
 		}
 	});
