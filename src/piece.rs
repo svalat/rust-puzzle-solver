@@ -96,15 +96,59 @@ impl PieceSideInfos {
 }
 
 impl Piece {
+	fn internal_load(self: &mut Self,img:&image::RgbaImage,back:&image::Rgba<u8>) {
+		//extract
+		let (x0,y0,w,h) = self.position;
+
+		//take margins to rotate inside
+		let (x1,y1) = (EXTRACT_MARGINS*w/100,EXTRACT_MARGINS*h/100);
+
+		//init images
+		for pixel in self.image.pixels_mut() {
+			*pixel = *back;
+		}
+		let b = image::Luma([common::MASK_BACKGROUND]);
+		for pixel in self.mask.pixels_mut() {
+			*pixel = b;
+		}
+
+		//copy image & mask
+		for y in 0..h {
+			for x in 0..w {
+				self.image.put_pixel(x1+x,y1+y,*img.get_pixel(x0+x,y0+y));
+			}
+		}
+
+		//build mask
+		let col = image::Luma([common::MASK_PIECE_PIXEL]);
+		for y in 0..h {
+			for x in 0..w {
+				if img.get_pixel(x0+x,y0+y) != back {
+					self.mask.put_pixel(x1+x,y1+y,col);
+				}
+			}
+		}
+	}
+
+	pub fn load(self: &mut Self,img:&image::RgbaImage,back:&image::Rgba<u8>) {
+		//erase
+		self.angle = 0;
+		self.side_infos = PieceSideInfos::new();
+		self.points = PiecePoints::new();
+		self.quality = 0;
+
+		//load image
+		self.internal_load(img,back);
+	}
+
 	/// Constructor of a puzzle piece. It take the global image, the backround color and a square
 	/// from which to extract the image and the mask.
 	pub fn new(img:&image::RgbaImage,back:&image::Rgba<u8>,square:(u32,u32,u32,u32),id:u32) -> Self {
 		//extract
-		let (x0,y0,w,h) = square;
+		let (_,_,w,h) = square;
 
 		//take margins to rotate inside
 		let (ww,hh) = (w+2*EXTRACT_MARGINS*w/100,h+2*EXTRACT_MARGINS*h/100);
-		let (x1,y1) = (EXTRACT_MARGINS*w/100,EXTRACT_MARGINS*h/100);
 
 		//create
 		let mut cur = Piece {
@@ -118,31 +162,8 @@ impl Piece {
 			quality: 0,
 		};
 
-		//init images
-		for pixel in cur.image.pixels_mut() {
-			*pixel = *back;
-		}
-		let b = image::Luma([common::MASK_BACKGROUND]);
-		for pixel in cur.mask.pixels_mut() {
-			*pixel = b;
-		}
-
-		//copy image & mask
-		for y in 0..h {
-			for x in 0..w {
-				cur.image.put_pixel(x1+x,y1+y,*img.get_pixel(x0+x,y0+y));
-			}
-		}
-
-		//build mask
-		let col = image::Luma([common::MASK_PIECE_PIXEL]);
-		for y in 0..h {
-			for x in 0..w {
-				if img.get_pixel(x0+x,y0+y) != back {
-					cur.mask.put_pixel(x1+x,y1+y,col);
-				}
-			}
-		}
+		//load
+		cur.internal_load(&img,&back);
 
 		//ret
 		cur

@@ -201,4 +201,32 @@ fn main() {
 		}
 	});
 
+	//loop on invalid
+	println!("===============================");
+	let mut img2 = image::open(&Path::new(&file)).unwrap();
+	for pp in all.iter_mut() {
+		let mut p = pp.lock().unwrap();
+		if p.quality < 16 {
+			println!("Redo for {} => {}",p.id,p.quality);
+			let mut best_angle = 0;
+			let mut best_quality = 0;
+			let mut rgba = img2.as_mut_rgba8().unwrap();
+			for angle in 0..90 {
+				let mut test = piece::Piece::new(rgba,&background,p.position,p.id);
+				test.angle = angle;
+				scan_piece(&mut test, -1);
+				if test.quality > best_quality {
+					best_quality = test.quality;
+					best_angle = angle;
+				}
+			}
+
+			let mut f = piece::Piece::new(rgba,&background,p.position,p.id);
+			f.angle = best_angle;
+			scan_piece(&mut f, -1);
+			f.save(8,"fix");
+			p.load(&rgba,&background);
+		}
+	}
+
 	}
