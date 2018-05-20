@@ -24,14 +24,7 @@ use std::io::Write;
 //internal
 use step5_corners;
 use piece::{Piece,PiecePoints,PieceSideType,PieceSideInfos};
-
-//cut
-const CORNER_CUT1: f32 = 5.0;
-const CORNER_CUT2: f32 = 10.0;
-const BUMP_HOLE_CUT1: f32 = 5.0;
-const BUMP_HOLE_CUT2: f32 = 10.0;
-const BUMP_HOLE_CUT3: f32 = 12.0;
-const BUMP_HOLE_CUT4: f32 = 18.0;
+use common::*;
 
 fn apply_cut(value: f32, cut1:f32, cut2:f32) -> u32 {
     let mut mark = 0;
@@ -102,14 +95,14 @@ fn check_holes_bumps_topo(p: &PiecePoints, t: &PieceSideInfos, size: (u32,u32), 
     db.push(bottom2);
 
     //mark
-    mark += apply_cut_sup(left1,BUMP_HOLE_CUT3,BUMP_HOLE_CUT4);
-    mark += apply_cut_sup(left2,BUMP_HOLE_CUT3,BUMP_HOLE_CUT4);
-    mark += apply_cut_sup(right1,BUMP_HOLE_CUT3,BUMP_HOLE_CUT4);
-    mark += apply_cut_sup(right2,BUMP_HOLE_CUT3,BUMP_HOLE_CUT4);
-    mark += apply_cut_sup(top1,BUMP_HOLE_CUT3,BUMP_HOLE_CUT4);
-    mark += apply_cut_sup(top2,BUMP_HOLE_CUT3,BUMP_HOLE_CUT4);
-    mark += apply_cut_sup(bottom1,BUMP_HOLE_CUT3,BUMP_HOLE_CUT4);
-    mark += apply_cut_sup(bottom2,BUMP_HOLE_CUT3,BUMP_HOLE_CUT4);
+    mark += apply_cut_sup(left1,QUALITY_BUMP_HOLE_CUT3,QUALITY_BUMP_HOLE_CUT4);
+    mark += apply_cut_sup(left2,QUALITY_BUMP_HOLE_CUT3,QUALITY_BUMP_HOLE_CUT4);
+    mark += apply_cut_sup(right1,QUALITY_BUMP_HOLE_CUT3,QUALITY_BUMP_HOLE_CUT4);
+    mark += apply_cut_sup(right2,QUALITY_BUMP_HOLE_CUT3,QUALITY_BUMP_HOLE_CUT4);
+    mark += apply_cut_sup(top1,QUALITY_BUMP_HOLE_CUT3,QUALITY_BUMP_HOLE_CUT4);
+    mark += apply_cut_sup(top2,QUALITY_BUMP_HOLE_CUT3,QUALITY_BUMP_HOLE_CUT4);
+    mark += apply_cut_sup(bottom1,QUALITY_BUMP_HOLE_CUT3,QUALITY_BUMP_HOLE_CUT4);
+    mark += apply_cut_sup(bottom2,QUALITY_BUMP_HOLE_CUT3,QUALITY_BUMP_HOLE_CUT4);
 
     mark
 }
@@ -132,8 +125,8 @@ fn check_holes_bumps(p: &PiecePoints, size: (u32,u32), db: &mut Vec<f32>) -> u32
 
     //apply cut nd count quality points
     let mut mark = 0;
-    mark += apply_cut(vert,BUMP_HOLE_CUT1,BUMP_HOLE_CUT2);
-    mark += apply_cut(horiz,BUMP_HOLE_CUT1,BUMP_HOLE_CUT2);
+    mark += apply_cut(vert,QUALITY_BUMP_HOLE_CUT1,QUALITY_BUMP_HOLE_CUT2);
+    mark += apply_cut(horiz,QUALITY_BUMP_HOLE_CUT1,QUALITY_BUMP_HOLE_CUT2);
 
     //ret
     mark
@@ -163,10 +156,10 @@ fn check_corners(p: &PiecePoints, size: (u32,u32), db: &mut Vec<f32>) -> u32 {
 
     //apply cut nd count quality points
     let mut mark = 0;
-    mark += apply_cut(left,CORNER_CUT1,CORNER_CUT2);
-    mark += apply_cut(right,CORNER_CUT1,CORNER_CUT2);
-    mark += apply_cut(top,CORNER_CUT1,CORNER_CUT2);
-    mark += apply_cut(bottom,CORNER_CUT1,CORNER_CUT2);
+    mark += apply_cut(left,QUALITY_CORNER_CUT1,QUALITY_CORNER_CUT2);
+    mark += apply_cut(right,QUALITY_CORNER_CUT1,QUALITY_CORNER_CUT2);
+    mark += apply_cut(top,QUALITY_CORNER_CUT1,QUALITY_CORNER_CUT2);
+    mark += apply_cut(bottom,QUALITY_CORNER_CUT1,QUALITY_CORNER_CUT2);
 
     //ret
     mark

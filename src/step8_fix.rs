@@ -26,6 +26,7 @@ use image::GenericImage;
 //local
 use piece;
 use scan;
+use common;
 
 pub fn fix_bad_quality(pool: &Pool,all: &Vec<Arc<Mutex<piece::Piece>>>,file:&str,dump:i32)
 {
@@ -48,7 +49,7 @@ pub fn fix_bad_quality(pool: &Pool,all: &Vec<Arc<Mutex<piece::Piece>>>,file:&str
 		}
 		
 		//check threashold
-		if quality < 16 {
+		if quality < common::FIX_MIN_QUALITY {
 			println!("Redo for {} => {}",id,quality);
 			let mut best = Arc::new(Mutex::new((0 as u32,0 as u32)));
 
