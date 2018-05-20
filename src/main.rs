@@ -107,7 +107,7 @@ fn main() {
 
 					//extract into list
 					let (_,_,w,h) = square;
-					if w*h > 100 {
+					if w*h > 600 {
 						all.push(piece::Piece::new(rgba,&background,square,id));
 						id = id + 1;
 					} else {
