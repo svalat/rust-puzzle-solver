@@ -18,12 +18,18 @@ use std::u32;
 //from image
 use image::GrayImage;
 use image::RgbaImage;
+use std::mem;
+use std::sync::{Mutex,Arc};
 
 //consts
 const EXTRACT_MARGINS: u32 = 30;
+pub const TOP:usize = 0;
+pub const RIGHT:usize = 1;
+pub const BOTTOM:usize = 2;
+pub const LEFT:usize = 3;
 
 //side type
-#[derive(Debug)]
+#[derive(Debug,Copy, Clone, PartialEq)]
 pub enum PieceSideType {
 	Hole,
 	Bump,
@@ -52,6 +58,15 @@ pub struct PiecePoints {
 	pub left_shape: (u32,u32),
 }
 
+/// Prepared face parameters (similate to PiecePoints but pre-rotated and using f32 to ease usage possibly to compute rotations)
+#[derive(Debug)]
+pub struct PieceFace {
+	pub top: (f32,f32),
+	pub middle: (f32,f32),
+	pub bottom: (f32,f32),
+	pub mode: PieceSideType,
+}
+
 /// Define a piece of the puzzle, this consist in an ID, a position in the global picture (rectangle)
 /// and the extracted image of the peice in color with margins to later rotate it. It also contain
 /// a mask of the piece in gray color to faster (instead of using RGB) scan the piece for all later 
@@ -65,7 +80,10 @@ pub struct Piece {
 	pub side_infos: PieceSideInfos,
 	pub points: PiecePoints,
 	pub quality: u32,
+	pub faces: [PieceFace;4],
 }
+
+pub type PieceVec = Vec<Arc<Mutex<Piece>>>;
 
 impl PiecePoints {
 	/// Constructor to init coords
@@ -79,6 +97,17 @@ impl PiecePoints {
 			bottom_shape: (u32::MAX,u32::MAX),
 			right_shape: (u32::MAX,u32::MAX),
 			left_shape: (u32::MAX,u32::MAX),
+		}
+	}
+}
+
+impl PieceFace {
+	pub fn new() -> Self {
+		Self {
+			top: (0.0,0.0),
+			middle: (0.0,0.0),
+			bottom: (0.0,0.0),
+			mode: PieceSideType::Unknown,
 		}
 	}
 }
@@ -160,6 +189,7 @@ impl Piece {
 			side_infos: PieceSideInfos::new(),
 			points: PiecePoints::new(),
 			quality: 0,
+			faces: [PieceFace::new(),PieceFace::new(),PieceFace::new(),PieceFace::new()],
 		};
 
 		//load
@@ -172,7 +202,7 @@ impl Piece {
 	/// Save the image and mask into files for debugging.
 	pub fn save(self: &Piece, step: u32, name: &str) {
 		//build base name
-		let base = format!("step-{}-{}-{:05}",step,name,self.id);
+		let base = format!("step-{:02}-{}-{:05}",step,name,self.id);
 
 		//export image
 		{
@@ -185,5 +215,43 @@ impl Piece {
 			let fname = base.to_string() + "-mask.png";
 			self.mask.save(fname).unwrap();
 		}
+	}
+
+	fn helper_rotate_coord(value:(u32,u32),rotate:bool,mirror:bool) -> (f32,f32) {
+		//extract and convert
+		let mut x = value.0 as f32;
+		let mut y = value.1 as f32;
+
+		//rotate
+		if rotate {
+			mem::swap(&mut x,&mut y);
+		}
+
+		//mirror
+		if mirror {
+			x = -x;
+		}
+
+		//ret
+		(x,y)
+	}
+
+	//help
+	fn helper_face(top:(u32,u32),middle:(u32,u32),bottom:(u32,u32),rotate:bool,mirror:bool,mode:PieceSideType) -> PieceFace
+	{
+		PieceFace {
+			top: Self::helper_rotate_coord(top,rotate,mirror),
+			middle: Self::helper_rotate_coord(middle,rotate,mirror),
+			bottom: Self::helper_rotate_coord(bottom,rotate,mirror),
+			mode: mode,
+		}
+	}
+
+	//extract faces to help matching
+	pub fn extract_faces(self: &mut Self) {
+		self.faces[TOP] = Self::helper_face(self.points.top_left_corner,self.points.top_shape,self.points.top_right_corner,true,true,self.side_infos.top);
+		self.faces[RIGHT] = Self::helper_face(self.points.top_right_corner,self.points.right_shape,self.points.bottom_right_corner,false,false,self.side_infos.right);
+		self.faces[BOTTOM] = Self::helper_face(self.points.bottom_left_corner,self.points.bottom_shape,self.points.bottom_right_corner,true,false,self.side_infos.bottom);
+		self.faces[LEFT] = Self::helper_face(self.points.top_left_corner,self.points.left_shape,self.points.bottom_left_corner,false,true,self.side_infos.left);
 	}
 }

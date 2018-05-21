@@ -60,4 +60,7 @@ pub fn scan_piece(p: &mut piece::Piece, dump: i32) {
 	//check quality
 	p.quality = step7_quality::calc_quality_mark(&p,dump);
 	println!("Quality = {}",p.quality);
+
+	//extract face numbers
+	p.extract_faces();
 }

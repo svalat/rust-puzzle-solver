@@ -22,6 +22,7 @@ mod step6_hbpoints;
 mod step7_quality;
 mod step8_fix;
 mod step9_cleanup;
+mod step10_matching;
 mod common;
 mod scan;
 
@@ -93,7 +94,7 @@ fn main() {
 	}
 
 	//list
-	let mut all: Vec<Arc<Mutex<piece::Piece>>> = Vec::new();
+	let mut all: piece::PieceVec = Vec::new();
 
 	//find first black pixel
 	{
@@ -175,4 +176,6 @@ fn main() {
 		}
 	});
 
+	//do matchin
+	step10_matching::compute_matching(&all);
 }

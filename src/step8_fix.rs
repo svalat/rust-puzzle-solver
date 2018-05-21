@@ -28,7 +28,7 @@ use piece;
 use scan;
 use common;
 
-pub fn fix_bad_quality(pool: &Pool,all: &Vec<Arc<Mutex<piece::Piece>>>,file:&str,dump:i32)
+pub fn fix_bad_quality(pool: &Pool,all: &piece::PieceVec,file:&str,dump:i32)
 {
 	//reload image as default was modified for search
 	let mut img2 = image::open(&Path::new(&file)).unwrap();
