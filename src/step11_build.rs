@@ -18,7 +18,7 @@ use ndarray::{Array2,Axis};
 use num_traits::identities::Zero;
 
 //local
-use piece::PieceVec;
+use piece::{PieceVec,PieceMatchVec,TOP,RIGHT,LEFT,BOTTOM};
 
 //consts
 const NONE: usize = usize::MAX;
@@ -97,16 +97,46 @@ fn has_neighboor(current: &Soluce,x : usize, y: usize) -> Option<(usize,usize)> 
     let mut ret: Option<(usize,usize)> = None;
     for dx in -1i32..1i32 {
         for dy in -1i32..1i32 {
-            let status = cell_has_piece(current,x,y,dx,dy);
-            match status {
-                Some(coord) => ret = Some(coord),
-                None => {},
+            if (dx == 0 || dy == 0) && dx != dy {
+                let status = cell_has_piece(current,x,y,dx,dy);
+                match status {
+                    Some(coord) => ret = Some(coord),
+                    None => {},
+                }
             }
         }
     } 
 
     //no neighboor
     ret
+}
+
+fn extract_candidates(current: & Soluce,pos: (usize,usize),exist:(usize,usize)) -> (usize,usize) {
+    //vars
+    let (x,y) = pos;
+    let (xn,yn) = exist;
+    let neighboor = current.get(exist).unwrap();
+        
+    //which side we want
+    //eg if neighboot is on left we want is right face
+    let mut side = 0 as usize;
+    if xn < x {
+        side = RIGHT;
+    } else if xn > x {
+        side = LEFT;
+    } else if yn < y {
+        side = BOTTOM;
+    } else if yn > y {
+        side = TOP;
+    } else {
+        panic!("This should not append !");
+    }
+
+    //apply rotation
+    let side = (side + 4 - neighboor.rotation) % 4;
+
+    //ret
+    (neighboor.piece_id,side)
 }
 
 fn search_next_step_recurse(pieces: &PieceVec, current: &mut Soluce, usage: &mut PieceUsage, proposal: &mut SoluceProposal,depth:u32) {
@@ -116,10 +146,23 @@ fn search_next_step_recurse(pieces: &PieceVec, current: &mut Soluce, usage: &mut
     //search a position which has neighboors
     for y in 0..h {
         for x in 0..w {
+            //check if has neighboor pices
             let status = has_neighboor(current,x,y);
             match status {
                 Some(coord) => {
-                    
+                    //extract candidate for local position
+                    let (id,side) = extract_candidates(current,(x,y),coord);
+                    let n = pieces[id].lock().unwrap();
+                    let candidates = &n.matches[side];
+
+                    //loop on candidates
+                    for c in candidates.iter() {
+                        //check if already in use
+                        if !usage[c.piece] {
+                            //check if match with all neighboors
+                            
+                        }
+                    }
                 },
                 None => {}
             }
