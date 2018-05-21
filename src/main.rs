@@ -181,4 +181,7 @@ fn main() {
 
 	//do matchin
 	step10_matching::compute_matching(&mut all,dump);
+
+	//build
+	step11_build::build_solution(&mut all,dump);
 }
