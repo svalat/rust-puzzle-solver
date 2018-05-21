@@ -200,7 +200,7 @@ fn check_match_one_neighboot(pieces: &PieceVec, current: &mut Soluce, pos: (usiz
 			let nfid = ((side + 2) + 4 - neighboor.rotation) % 4;
 
 			//calc real face the current piece export to neighboor
-			let fid = (side + 4 - neighboor.rotation) % 4;
+			let fid = (side + 4 - cur.rotation) % 4;
 
 			//search in list
 			{
@@ -313,7 +313,7 @@ fn search_next_step_recurse(pieces: &PieceVec, current: &mut Soluce, usage: &mut
 		if cnt == proposal.nb {
 			println!("KEEP -> {}",proposal.list.len());
 			let mut keep = true;
-			for s in proposal.list.iter() {
+			/*for s in proposal.list.iter() {
 				for y in 0..h {
 					for x in 0..w {
 						if s.get((x,y)).unwrap() == current.get((x,y)).unwrap() || !keep {
@@ -322,11 +322,16 @@ fn search_next_step_recurse(pieces: &PieceVec, current: &mut Soluce, usage: &mut
 						}
 					}
 				}
-			}
+			}*/
 			if keep {
 				let copy = current.clone();
 				proposal.list.push(copy);
 				println!("{}",current);
+				if cnt == 8 {
+				panic!("finish");
+				}
+			} else {
+				println!("DON'T KEEP");
 			}
 		}
 	}
