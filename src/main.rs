@@ -11,6 +11,8 @@ extern crate image;
 extern crate imageproc;
 extern crate scoped_pool;
 extern crate argparse;
+extern crate ndarray;
+extern crate num_traits;
 
 //modules
 mod piece;
@@ -23,6 +25,7 @@ mod step7_quality;
 mod step8_fix;
 mod step9_cleanup;
 mod step10_matching;
+mod step11_build;
 mod common;
 mod scan;
 

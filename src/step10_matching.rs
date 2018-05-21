@@ -171,7 +171,7 @@ pub fn compute_matching(pieces: &mut PieceVec, dump:i32) {
 
 	//loop and save
 	for m in full_soluce {
-		let (dist,angle,mirrored,id1,fid1,id2,fid2) = m;
+		let (dist,angle,_mirrored,id1,fid1,id2,fid2) = m;
 		if dist < cut {
 			{
 				let p1 = &mut pieces[id1].lock().unwrap();
