@@ -16,7 +16,7 @@ use std::fs::File;
 use std::io::Write;
 
 //internal
-use piece::{PieceFace,PieceVec};
+use piece::{PieceFace,PieceVec,PieceMatch};
 use std::cmp::Ordering;
 
 fn move_face(face: &PieceFace,dx:f32,dy:f32) -> PieceFace {
@@ -110,9 +110,9 @@ fn check_quick_face_distance(face1: &PieceFace,face2: &PieceFace) -> (f32,f32,Pi
 	(ret,angle,face2)
 }
 
-pub fn compute_matching(pieces: &PieceVec, dump:i32) {
+pub fn compute_matching(pieces: &mut PieceVec, dump:i32) {
 	//to extract media dist
-	let mut full_soluce: Vec<(f32,f32,bool)> = vec!();
+	let mut full_soluce: Vec<(f32,f32,bool,usize,usize,usize,usize)> = vec!();
 	let mut file: Option<File> = None;
 
 	//open for dump
@@ -144,13 +144,13 @@ pub fn compute_matching(pieces: &PieceVec, dump:i32) {
 						let (dist2,angle2,f2) = check_quick_face_distance_mirrored(&face1,&face2);
 						let dist = dist1.min(dist2);
 						if dist1 < dist2 {
-							full_soluce.push((dist,angle1,false));;
+							full_soluce.push((dist,angle1,false,i1,fid1,i2,fid2));;
 							match file.as_mut() {
 								Some(f) => f.write_fmt(format_args!("Match {}:{} <-> {}:{} -> {} -> {} -> {:?} -- {:?} --> {:?}\n",i1,fid1,i2,fid2,dist,angle1,face1,face2,f1)).unwrap(),
 								None => {}
 							}
 						} else {
-							full_soluce.push((dist,angle2,true));
+							full_soluce.push((dist,angle2,true,i1,fid1,i2,fid2));
 							match file.as_mut() {
 								Some(f) => f.write_fmt(format_args!("Match {}:{} <-> {}:{} -> {} -> {} -> {:?} -- {:?} --> {:?}\n",i1,fid1,i2,fid2,dist,angle2,face1,face2,f2)).unwrap(),
 								None => {}
@@ -168,4 +168,30 @@ pub fn compute_matching(pieces: &PieceVec, dump:i32) {
     let mid = full_soluce.len() / 2;
 	let cut = full_soluce[mid].0/2.0;
 	println!("median = {}, median/2 = {}",full_soluce[mid].0,cut);
+
+	//loop and save
+	for m in full_soluce {
+		let (dist,angle,mirrored,id1,fid1,id2,fid2) = m;
+		if dist < cut {
+			{
+				let p1 = &mut pieces[id1].lock().unwrap();
+				p1.matches[fid1].push(PieceMatch{
+					piece: id2,
+					side: fid2,
+					angle: angle,
+					distance: dist,
+				});
+			}
+
+			{
+				let p2 = &mut pieces[id2].lock().unwrap();
+				p2.matches[fid2].push(PieceMatch{
+					piece: id1,
+					side: fid1,
+					angle: angle,
+					distance: dist,
+				});
+			}
+		}
+	}
 }

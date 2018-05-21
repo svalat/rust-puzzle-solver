@@ -58,6 +58,17 @@ pub struct PiecePoints {
 	pub left_shape: (u32,u32),
 }
 
+/// Store a matching solution
+pub struct PieceMatch {
+	pub piece: usize,
+	pub side: usize,
+	pub angle: f32,
+	pub distance: f32,
+}
+
+/// list of matching
+pub type PieceMatchVec = Vec<PieceMatch>;
+
 /// Prepared face parameters (similate to PiecePoints but pre-rotated and using f32 to ease usage possibly to compute rotations)
 #[derive(Debug)]
 pub struct PieceFace {
@@ -81,6 +92,7 @@ pub struct Piece {
 	pub points: PiecePoints,
 	pub quality: u32,
 	pub faces: [PieceFace;4],
+	pub matches: [PieceMatchVec;4],
 }
 
 pub type PieceVec = Vec<Arc<Mutex<Piece>>>;
@@ -190,6 +202,7 @@ impl Piece {
 			points: PiecePoints::new(),
 			quality: 0,
 			faces: [PieceFace::new(),PieceFace::new(),PieceFace::new(),PieceFace::new()],
+			matches: [vec!(),vec!(),vec!(),vec!()],
 		};
 
 		//load
