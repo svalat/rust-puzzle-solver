@@ -12,6 +12,8 @@
 
 //std
 use std::f32;
+use std::fs::File;
+use std::io::Write;
 
 //internal
 use piece::{PieceFace,PieceVec};
@@ -108,9 +110,17 @@ fn check_quick_face_distance(face1: &PieceFace,face2: &PieceFace) -> (f32,f32,Pi
 	(ret,angle,face2)
 }
 
-pub fn compute_matching(pieces: &PieceVec) {
+pub fn compute_matching(pieces: &PieceVec, dump:i32) {
 	//to extract media dist
-	let mut all: Vec<f32> = vec!();
+	let mut full_soluce: Vec<(f32,f32,bool)> = vec!();
+	let mut file: Option<File> = None;
+
+	//open for dump
+	//dump db into file
+    if dump == 0 || dump == 10 {
+        let base = format!("step-10-mateching.txt");
+        file = Some(File::create(base).unwrap());
+    }
 
 	//loop on all pieces
 	for i1 in 0..pieces.len() {
@@ -133,11 +143,18 @@ pub fn compute_matching(pieces: &PieceVec) {
 						let (dist1,angle1,f1) = check_quick_face_distance(&face1,face2);
 						let (dist2,angle2,f2) = check_quick_face_distance_mirrored(&face1,&face2);
 						let dist = dist1.min(dist2);
-						all.push(dist);
 						if dist1 < dist2 {
-							println!("Match {}:{} <-> {}:{} -> {} -> {} -> {:?} -- {:?} --> {:?}",i1,fid1,i2,fid2,dist,angle1,face1,face2,f1);
+							full_soluce.push((dist,angle1,false));;
+							match file.as_mut() {
+								Some(f) => f.write_fmt(format_args!("Match {}:{} <-> {}:{} -> {} -> {} -> {:?} -- {:?} --> {:?}\n",i1,fid1,i2,fid2,dist,angle1,face1,face2,f1)).unwrap(),
+								None => {}
+							}
 						} else {
-							println!("Match {}:{} <-> {}:{} -> {} -> {} -> {:?} -- {:?} --> {:?}",i1,fid1,i2,fid2,dist,angle2,face1,face2,f2);
+							full_soluce.push((dist,angle2,true));
+							match file.as_mut() {
+								Some(f) => f.write_fmt(format_args!("Match {}:{} <-> {}:{} -> {} -> {} -> {:?} -- {:?} --> {:?}\n",i1,fid1,i2,fid2,dist,angle2,face1,face2,f2)).unwrap(),
+								None => {}
+							}
 						}
 					}
 				}
@@ -147,7 +164,8 @@ pub fn compute_matching(pieces: &PieceVec) {
 
 	//median
 	println!("Calc median");
-	all.sort_by(|a, b| a.partial_cmp(b).unwrap_or(Ordering::Equal));
-    let mid = all.len() / 2;
-	println!("median = {}, median/2 = {}",all[mid],all[mid/2]);
+	full_soluce.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(Ordering::Equal));
+    let mid = full_soluce.len() / 2;
+	let cut = full_soluce[mid].0/2.0;
+	println!("median = {}, median/2 = {}",full_soluce[mid].0,cut);
 }

@@ -177,5 +177,5 @@ fn main() {
 	});
 
 	//do matchin
-	step10_matching::compute_matching(&all);
+	step10_matching::compute_matching(&all,dump);
 }
