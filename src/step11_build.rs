@@ -99,7 +99,7 @@ fn cell_has_piece(current: &Soluce,x : usize, y: usize, dx: i32, dy: i32) -> Opt
     if x >= 0 && x < w && y >= 0 && y < h {
         let cell = current.get((x as usize,y as usize)).unwrap();
         if cell.piece_id != NONE {
-            println!("Found {} in {:?}",cell.piece_id,(x,y));
+            //println!("Found {} in {:?}",cell.piece_id,(x,y));
             ret = true;
         }
     }
@@ -120,7 +120,7 @@ fn has_neighboor(current: &Soluce,x : usize, y: usize) -> Option<(usize,usize)> 
                 match status {
                     Some(coord) => {
                         ret = Some(coord);
-                        println!("Has neighboor : {:?} -> {:?}",(x,y),(dx,dy));
+                        //println!("Has neighboor : {:?} -> {:?}",(x,y),(dx,dy));
                     },
                     None => {},
                 }
@@ -235,6 +235,46 @@ fn check_match_all_neighboors(pieces: &PieceVec, current: &mut Soluce, pos: (usi
 	&& check_match_one_neighboot(pieces,current,pos,(0,1),BOTTOM)
 }
 
+fn find_fist_non_empty(soluce:&Soluce) -> (usize,usize) {
+	let (w,h) = (soluce.len_of(Axis(0)),soluce.len_of(Axis(1)));
+	let mut ret = (0,0);
+	
+	for y in 0..h {
+		for x in 0..w {
+			let local = soluce.get((x,y)).unwrap();
+			if local.piece_id != NONE && ret == (0,0) {
+				ret = (x,y)
+			}
+		}
+	}
+
+	ret
+}
+
+fn check_if_same_soluce(s1: &Soluce,s2:&Soluce) -> bool {
+	//infos
+	let (w,h) = (s1.len_of(Axis(0)),s1.len_of(Axis(1)));
+	let mut ret = true;
+
+	//extract first non empty
+	let (x0,y0) = find_fist_non_empty(s1);
+	let (x1,y1) = find_fist_non_empty(s1);
+	let (ww,hh) = (w - x0.max(x1),h - y0.max(y1));
+
+	//loop
+	for y in 0..hh {
+		for x in 0..ww {
+			let p1 = s1.get((x+x0,y+y0)).unwrap();
+			let p2 = s2.get((x+x1,y+y1)).unwrap();
+			if p1 != p2 {
+				ret = false;
+			}
+		}
+	}
+
+	ret
+}
+
 fn search_next_step_recurse(pieces: &PieceVec, current: &mut Soluce, usage: &mut PieceUsage, proposal: &mut SoluceProposal,depth:u32) {
     //search an intersting position
     let (w,h) = (current.len_of(Axis(0)),current.len_of(Axis(1)));
@@ -259,26 +299,26 @@ fn search_next_step_recurse(pieces: &PieceVec, current: &mut Soluce, usage: &mut
 						let candidates: PieceMatchVec;
 						{
 							let n = pieces[id].lock().unwrap();
-							println!("=======> {:?} <-> {:?} ==> {} : {}",(x,y),coord,id,nside);
-							println!("Candidated:0 {:?}",n.matches[0]);
-							println!("Candidated:1 {:?}",n.matches[1]);
-							println!("Candidated:2 {:?}",n.matches[2]);
-							println!("Candidated:3 {:?}",n.matches[3]);
+							//println!("=======> {:?} <-> {:?} ==> {} : {}",(x,y),coord,id,nside);
+							//println!("Candidated:0 {:?}",n.matches[0]);
+							//println!("Candidated:1 {:?}",n.matches[1]);
+							//println!("Candidated:2 {:?}",n.matches[2]);
+							//println!("Candidated:3 {:?}",n.matches[3]);
 							candidates = n.matches[nside].clone();
 						}
 
 						//loop on candidates
 						for c in candidates.iter() {
-							println!("TTry {}",c.piece);
+							//println!("TTry {}",c.piece);
 							//check if already in use
 							if !usage[c.piece] {
 								//calc rotation to place the piece
 								let rot = calc_rotation((x,y),coord,c.side);
-								println!("Try {}, {}",c.piece,rot);
+								//println!("Try {}, {}",c.piece,rot);
 
 								//setup piece in place
 								{
-									println!("Put {}:{} in {:?}",c.piece,rot,(x,y));
+									//println!("Put {}:{} in {:?}",c.piece,rot,(x,y));
 									let mut cell = current.get_mut((x,y)).unwrap();
 									cell.piece_id = c.piece;
 									cell.rotation = rot;
@@ -287,7 +327,7 @@ fn search_next_step_recurse(pieces: &PieceVec, current: &mut Soluce, usage: &mut
 
 								//check if match with all neighboors
 								if check_match_all_neighboors(pieces,current,(x,y)) {
-									println!("Recurse {}",depth);
+									//println!("Recurse {}",depth);
 									search_next_step_recurse(pieces,current,usage,proposal,depth+1);
 									found = true;
 								}
@@ -327,26 +367,25 @@ fn search_next_step_recurse(pieces: &PieceVec, current: &mut Soluce, usage: &mut
 		}
 		if cnt == proposal.nb {
 			println!("KEEP -> {}",proposal.list.len());
-			let keep = true;
-			/*for s in proposal.list.iter() {
-				for y in 0..h {
-					for x in 0..w {
-						if s.get((x,y)).unwrap() == current.get((x,y)).unwrap() || !keep {
-							keep = false;
-							break;
-						}
-					}
+			let mut keep = true;
+
+			//compare with existing sol
+			for s in proposal.list.iter() {
+				if check_if_same_soluce(s,current) {
+					keep = false;
 				}
-			}*/
+			}
+
+			//filter
 			if keep {
 				let copy = current.clone();
 				proposal.list.push(copy);
-				println!("{}",current);
-				if cnt == 8 {
-				panic!("finish");
-				}
-			} else {
-				println!("DON'T KEEP");
+				//println!("{}",current);
+			}
+
+			//cut
+			if proposal.list.len() >= 400 {
+				panic!("Too many solution, piece matching was not restrictive enougth....");
 			}
 		}
 	}

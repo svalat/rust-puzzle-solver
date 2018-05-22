@@ -44,7 +44,7 @@ use scoped_pool::Pool;
 use image::GenericImage;
 
 //interal
-use piece::PieceMatch;
+//use piece::PieceMatch;
 
 ///Main function to run the program.
 fn main() {
@@ -183,40 +183,7 @@ fn main() {
 	});
 
 	//do matchin
-	//step10_matching::compute_matching(&mut all,dump);
-
-	//fake matching for test
-	{
-		let mut p0 = all[0].lock().unwrap();
-		let mut p1 = all[1].lock().unwrap();
-		let mut p2 = all[2].lock().unwrap();
-		let mut p3 = all[3].lock().unwrap();
-		let mut p4 = all[4].lock().unwrap();
-		let mut p5 = all[5].lock().unwrap();
-		let mut p6 = all[6].lock().unwrap();
-		let mut p7 = all[7].lock().unwrap();
-		let mut p8 = all[8].lock().unwrap();
-
-		p5.matches[0].push(PieceMatch{piece:7,side:3,angle:0.0,distance:0.0});
-		p7.matches[0].push(PieceMatch{piece:3,side:2,angle:0.0,distance:0.0});
-		p4.matches[1].push(PieceMatch{piece:8,side:0,angle:0.0,distance:0.0});
-		p8.matches[1].push(PieceMatch{piece:6,side:3,angle:0.0,distance:0.0});
-		p7.matches[1].push(PieceMatch{piece:4,side:2,angle:0.0,distance:0.0});
-		p3.matches[1].push(PieceMatch{piece:2,side:2,angle:0.0,distance:0.0});
-		p4.matches[3].push(PieceMatch{piece:2,side:1,angle:0.0,distance:0.0});
-		p2.matches[3].push(PieceMatch{piece:0,side:2,angle:0.0,distance:0.0});
-		p2.matches[0].push(PieceMatch{piece:1,side:2,angle:0.0,distance:0.0});
-
-		p7.matches[3].push(PieceMatch{piece:5,side:0,angle:0.0,distance:0.0});
-		p3.matches[2].push(PieceMatch{piece:7,side:0,angle:0.0,distance:0.0});
-		p8.matches[0].push(PieceMatch{piece:4,side:1,angle:0.0,distance:0.0});
-		p6.matches[3].push(PieceMatch{piece:8,side:1,angle:0.0,distance:0.0});
-		p4.matches[2].push(PieceMatch{piece:7,side:1,angle:0.0,distance:0.0});
-		p2.matches[2].push(PieceMatch{piece:3,side:1,angle:0.0,distance:0.0});
-		p2.matches[1].push(PieceMatch{piece:4,side:3,angle:0.0,distance:0.0});
-		p0.matches[2].push(PieceMatch{piece:2,side:3,angle:0.0,distance:0.0});
-		p1.matches[2].push(PieceMatch{piece:2,side:0,angle:0.0,distance:0.0});
-	}
+	step10_matching::compute_matching(&mut all,dump);
 
 	//build
 	step11_build::build_solution(&mut all,dump);
