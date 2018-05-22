@@ -96,6 +96,7 @@ fn cell_has_piece(current: &Soluce,x : usize, y: usize, dx: i32, dy: i32) -> Opt
     if x >= 0 && x < w && y >= 0 && y < h {
         let cell = current.get((x as usize,y as usize)).unwrap();
         if cell.piece_id != NONE {
+            println!("Found {} in {:?}",cell.piece_id,(x,y));
             ret = true;
         }
     }
@@ -109,12 +110,15 @@ fn cell_has_piece(current: &Soluce,x : usize, y: usize, dx: i32, dy: i32) -> Opt
 
 fn has_neighboor(current: &Soluce,x : usize, y: usize) -> Option<(usize,usize)> {
     let mut ret: Option<(usize,usize)> = None;
-    for dx in -1i32..1i32 {
-        for dy in -1i32..1i32 {
+    for dx in -1i32..2i32 {
+        for dy in -1i32..2i32 {
             if (dx == 0 || dy == 0) && dx != dy {
                 let status = cell_has_piece(current,x,y,dx,dy);
                 match status {
-                    Some(coord) => ret = Some(coord),
+                    Some(coord) => {
+                        ret = Some(coord);
+                        println!("Has neighboor : {:?} -> {:?}",(x,y),(dx,dy));
+                    },
                     None => {},
                 }
             }
@@ -252,18 +256,26 @@ fn search_next_step_recurse(pieces: &PieceVec, current: &mut Soluce, usage: &mut
 						let candidates: PieceMatchVec;
 						{
 							let n = pieces[id].lock().unwrap();
+							println!("=======> {:?} <-> {:?} ==> {} : {}",(x,y),coord,id,nside);
+							println!("Candidated:0 {:?}",n.matches[0]);
+							println!("Candidated:1 {:?}",n.matches[1]);
+							println!("Candidated:2 {:?}",n.matches[2]);
+							println!("Candidated:3 {:?}",n.matches[3]);
 							candidates = n.matches[nside].clone();
 						}
 
 						//loop on candidates
 						for c in candidates.iter() {
+							println!("TTry {}",c.piece);
 							//check if already in use
 							if !usage[c.piece] {
 								//calc rotation to place the piece
 								let rot = calc_rotation((x,y),coord,c.side);
+								println!("Try {}, {}",c.piece,rot);
 
 								//setup piece in place
 								{
+									println!("Put {}:{} in {:?}",c.piece,rot,(x,y));
 									let mut cell = current.get_mut((x,y)).unwrap();
 									cell.piece_id = c.piece;
 									cell.rotation = rot;
@@ -356,7 +368,7 @@ pub fn build_solution(pieces: &PieceVec, _dump:i32) {
     }
 
     //loop on all piece to start
-    for i in 0..pieces.len() {
+    for i in 0..1 { //pieces.len() {
         //place to center
         {
             let mut cell = current.get_mut((x,y)).unwrap();

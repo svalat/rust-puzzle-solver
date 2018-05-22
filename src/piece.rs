@@ -59,7 +59,7 @@ pub struct PiecePoints {
 }
 
 /// Store a matching solution
-#[derive(Clone)]
+#[derive(Clone,Debug)]
 pub struct PieceMatch {
 	pub piece: usize,
 	pub side: usize,
