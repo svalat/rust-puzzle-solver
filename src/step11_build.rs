@@ -9,6 +9,9 @@
 /// Now we know more of less the macthing between pieces we can try to brut force to build
 /// a soluction following the matching and try to match most of the given pieces.
 
+//load external
+extern crate image;
+
 //std
 use std::usize;
 use std::ops::Add;
@@ -25,8 +28,8 @@ use piece::{PieceVec,TOP,RIGHT,LEFT,BOTTOM,PieceMatchVec};
 const NONE: usize = usize::MAX;
 
 //element
-#[derive(Clone,PartialEq)]
-struct SoluceElmt {
+#[derive(Debug,Clone,PartialEq)]
+pub struct SoluceElmt {
     piece_id: usize,
     rotation: usize,
 }
@@ -77,7 +80,7 @@ impl Zero for SoluceElmt {
 }
 
 //define a soluce
-type Soluce = Array2<SoluceElmt>;
+pub type Soluce = Array2<SoluceElmt>;
 type PieceUsage = Vec<bool>;
 type SoluceVec = Vec<Soluce>;
 
@@ -324,7 +327,7 @@ fn search_next_step_recurse(pieces: &PieceVec, current: &mut Soluce, usage: &mut
 		}
 		if cnt == proposal.nb {
 			println!("KEEP -> {}",proposal.list.len());
-			let mut keep = true;
+			let keep = true;
 			/*for s in proposal.list.iter() {
 				for y in 0..h {
 					for x in 0..w {
@@ -349,7 +352,7 @@ fn search_next_step_recurse(pieces: &PieceVec, current: &mut Soluce, usage: &mut
 	}
 }
 
-pub fn build_solution(pieces: &PieceVec, _dump:i32) {
+pub fn build_solution(pieces: &PieceVec, _dump:i32) -> Soluce {
     //estimate size & middle pos
     let size = pieces.len() * 2;
     let (x,y) = (size / 2, size / 2);
@@ -402,4 +405,73 @@ pub fn build_solution(pieces: &PieceVec, _dump:i32) {
 	for sol in proposal.list.iter() {
 		println!("{}",sol);
 	}	
+
+	//return for test
+	proposal.list[0].clone()
+}
+
+#[cfg(test)]
+mod test {
+	use std::sync::{Arc,Mutex};
+	use image::{RgbaImage};
+	use step11_build::*;
+	use piece::{PieceVec,PieceMatch,Piece};
+
+	#[test]
+	fn builder_solve_exact() {
+		let image = RgbaImage::new(100,100);
+		let rect = (0,0,10,10);
+		let back = image.get_pixel(0,0);
+		let mut all: PieceVec = Vec::new();
+		for i in 0..9 {
+			all.push(Arc::new(Mutex::new(Piece::new(&image,&back,rect,i))));
+		}
+
+		//let links
+		{
+			let mut p0 = all[0].lock().unwrap();
+			let mut p1 = all[1].lock().unwrap();
+			let mut p2 = all[2].lock().unwrap();
+			let mut p3 = all[3].lock().unwrap();
+			let mut p4 = all[4].lock().unwrap();
+			let mut p5 = all[5].lock().unwrap();
+			let mut p6 = all[6].lock().unwrap();
+			let mut p7 = all[7].lock().unwrap();
+			let mut p8 = all[8].lock().unwrap();
+
+			p5.matches[0].push(PieceMatch{piece:7,side:3,angle:0.0,distance:0.0});
+			p7.matches[0].push(PieceMatch{piece:3,side:2,angle:0.0,distance:0.0});
+			p4.matches[1].push(PieceMatch{piece:8,side:0,angle:0.0,distance:0.0});
+			p8.matches[1].push(PieceMatch{piece:6,side:3,angle:0.0,distance:0.0});
+			p7.matches[1].push(PieceMatch{piece:4,side:2,angle:0.0,distance:0.0});
+			p3.matches[1].push(PieceMatch{piece:2,side:2,angle:0.0,distance:0.0});
+			p4.matches[3].push(PieceMatch{piece:2,side:1,angle:0.0,distance:0.0});
+			p2.matches[3].push(PieceMatch{piece:0,side:2,angle:0.0,distance:0.0});
+			p2.matches[0].push(PieceMatch{piece:1,side:2,angle:0.0,distance:0.0});
+
+			p7.matches[3].push(PieceMatch{piece:5,side:0,angle:0.0,distance:0.0});
+			p3.matches[2].push(PieceMatch{piece:7,side:0,angle:0.0,distance:0.0});
+			p8.matches[0].push(PieceMatch{piece:4,side:1,angle:0.0,distance:0.0});
+			p6.matches[3].push(PieceMatch{piece:8,side:1,angle:0.0,distance:0.0});
+			p4.matches[2].push(PieceMatch{piece:7,side:1,angle:0.0,distance:0.0});
+			p2.matches[2].push(PieceMatch{piece:3,side:1,angle:0.0,distance:0.0});
+			p2.matches[1].push(PieceMatch{piece:4,side:3,angle:0.0,distance:0.0});
+			p0.matches[2].push(PieceMatch{piece:2,side:3,angle:0.0,distance:0.0});
+			p1.matches[2].push(PieceMatch{piece:2,side:0,angle:0.0,distance:0.0});
+		}
+
+		//build
+		let sol = build_solution(&all,-1);
+
+		//check solution
+		assert_eq!(*sol.get((9,9)).unwrap(), SoluceElmt{piece_id:0,rotation:0});
+		assert_eq!(*sol.get((10,10)).unwrap(), SoluceElmt{piece_id:1,rotation:1});
+		assert_eq!(*sol.get((9,10)).unwrap(), SoluceElmt{piece_id:2,rotation:1});
+		assert_eq!(*sol.get((8,10)).unwrap(), SoluceElmt{piece_id:3,rotation:0});
+		assert_eq!(*sol.get((9,11)).unwrap(), SoluceElmt{piece_id:4,rotation:1});
+		assert_eq!(*sol.get((7,11)).unwrap(), SoluceElmt{piece_id:5,rotation:1});
+		assert_eq!(*sol.get((10,12)).unwrap(), SoluceElmt{piece_id:6,rotation:0});
+		assert_eq!(*sol.get((8,11)).unwrap(), SoluceElmt{piece_id:7,rotation:0});
+		assert_eq!(*sol.get((9,12)).unwrap(), SoluceElmt{piece_id:8,rotation:0});
+	}
 }
