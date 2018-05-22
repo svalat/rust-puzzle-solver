@@ -25,13 +25,13 @@ use num_traits::identities::Zero;
 use piece::{PieceVec,TOP,RIGHT,LEFT,BOTTOM,PieceMatchVec};
 
 //consts
-const NONE: usize = usize::MAX;
+pub const NONE: usize = usize::MAX;
 
 //element
 #[derive(Debug,Clone,PartialEq)]
 pub struct SoluceElmt {
-    piece_id: usize,
-    rotation: usize,
+    pub piece_id: usize,
+    pub rotation: usize,
 }
 
 impl fmt::Display for SoluceElmt {
