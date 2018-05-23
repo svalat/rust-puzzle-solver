@@ -45,7 +45,7 @@ use scoped_pool::Pool;
 use image::GenericImage;
 
 //interal
-use piece::PieceMatch;
+//use piece::PieceMatch;
 
 ///Main function to run the program.
 fn main() {
@@ -184,10 +184,10 @@ fn main() {
 	});
 
 	//do matchin
-	//step10_matching::compute_matching(&mut all,dump);
+	step10_matching::compute_matching(&mut all,dump);
 
 	//let links
-	{
+	/*{
 		let mut p0 = all[0].lock().unwrap();
 		let mut p1 = all[1].lock().unwrap();
 		let mut p2 = all[2].lock().unwrap();
@@ -217,11 +217,11 @@ fn main() {
 		p2.matches[1].push(PieceMatch{piece:4,side:3,angle:0.0,distance:0.0});
 		p0.matches[2].push(PieceMatch{piece:2,side:3,angle:0.0,distance:0.0});
 		p1.matches[2].push(PieceMatch{piece:2,side:0,angle:0.0,distance:0.0});
-	}
+	}*/
 
 	//build
-	let sol = step11_build::build_solution(&mut all,dump);
+	//let sol = step11_build::build_solution(&mut all,dump);
 
 	//draw
-	step12_draw::draw_solution(&sol,&all,"step-12-solu-0001.png");
+	//step12_draw::draw_solution(&sol,&all,"step-12-solu-0001.png");
 }

@@ -8,11 +8,12 @@
 
 //setup colors
 pub const MASK_BACKGROUND: u8 = 0u8;
-pub const MASK_PIECE_PIXEL: u8 = 128u8;
+pub const MASK_PIECE_PIXEL: u8 = 127u8;
 pub const MASK_SURROUND_RECT: u8 = 255u8;
 pub const MASK_HIDDEN_BUMP: u8 = 64u8;
 pub const MASK_POINTS_INTREST: u8 = 254u8;
 pub const MASK_POINTS_BACK: u8 = 253u8;
+pub const MASK_IGNORE_SUPERP: u8 = 16u8;
 
 //quality mark
 pub const QUALITY_CORNER_CUT1: f32 = 5.0;

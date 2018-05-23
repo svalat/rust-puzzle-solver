@@ -254,9 +254,12 @@ impl Piece {
 	fn helper_face(top:(u32,u32),middle:(u32,u32),bottom:(u32,u32),rotate:bool,mirror:bool,mode:PieceSideType) -> PieceFace
 	{
 		PieceFace {
-			top: Self::helper_rotate_coord(top,rotate,mirror),
+			/*top: Self::helper_rotate_coord(top,rotate,mirror),
 			middle: Self::helper_rotate_coord(middle,rotate,mirror),
-			bottom: Self::helper_rotate_coord(bottom,rotate,mirror),
+			bottom: Self::helper_rotate_coord(bottom,rotate,mirror),*/
+			top: (top.0 as f32,top.1 as f32),
+			middle: (middle.0 as f32,middle.1 as f32),
+			bottom: (bottom.0 as f32,bottom.1 as f32),
 			mode: mode,
 		}
 	}
