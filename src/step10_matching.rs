@@ -26,6 +26,7 @@ use image::{GrayImage,imageops,Luma};
 use piece::{PieceFace,PieceVec,PieceMatch,Piece};
 use std::cmp::Ordering;
 use step5_corners;
+use common;
 
 fn move_face(face: &PieceFace,dx:f32,dy:f32) -> PieceFace {
 	PieceFace {
@@ -56,9 +57,9 @@ fn face_mirror_on_x(face: &PieceFace) -> PieceFace {
 
 fn face_mirror_on_y(face: &PieceFace) -> PieceFace {
 	PieceFace {
-		top: (face.top.0,-face.top.1),
+		top: (face.bottom.0,-face.bottom.1),
 		middle: (face.middle.0,-face.middle.1),
-		bottom: (face.bottom.0,-face.bottom.1),
+		bottom: (face.top.0,-face.top.1),
 		mode: face.mode,
 	}
 }
@@ -74,6 +75,7 @@ fn rotate_point_center(point:(f32,f32),center:(f32,f32),center_after:(f32,f32),a
 	let (x,y) = point;
 	let (cx,cy) = center;
 	let (cx1,cy1) = center_after;
+	let angle = angle.to_radians();
 	let xf = cx1 + (x-cx) * angle.cos() - (y-cy) * angle.sin();
 	let yf = cy1 + (x-cx) * angle.sin() + (y-cy) * angle.cos();
 	(xf,yf)
@@ -103,9 +105,6 @@ fn check_quick_face_distance_mirrored(face1: &PieceFace,face2: &PieceFace) -> (f
 }
 
 fn check_quick_face_distance(face1: &PieceFace,face2: &PieceFace) -> (f32,f32,PieceFace) {
-	//mirror
-	let face2 = face_mirror_on_x(face2);
-
 	//calcule offset to match top
 	let dx = face2.top.0 - face1.top.0;
 	let dy = face2.top.1 - face1.top.1;
@@ -127,7 +126,7 @@ fn check_quick_face_distance(face1: &PieceFace,face2: &PieceFace) -> (f32,f32,Pi
 	}
 
 	//rotate face2
-	let face2 = rotate_face(&face2,angle);
+	//let face2 = rotate_face(&face2,angle);
 
 	//calc distance
 	let ret = calc_dist(face1.top,face2.top) + calc_dist(face1.middle,face2.middle) + calc_dist(face1.bottom,face2.bottom);
@@ -164,14 +163,14 @@ fn rotate_face_center(piece_size: (u32,u32),face: &PieceFace, faceid: usize,want
 	let rot = cacl_rotate(faceid,want_on);
 	let angle = rot as f32 * 90.0;
 
-	println!("BEFORE {} => {} => ({}) => {:?}",faceid,want_on,angle,face);
+	//println!("BEFORE {} => {} => ({}) => {:?}",faceid,want_on,angle,face);
 
 	//calculate after center
 	let center2;
 	match rot {
 		0 => center2 = (0 as f32,0 as f32),
 		1 => center2 = (h as f32,0 as f32),
-		2 => center2 = (w as f32,0 as f32),
+		2 => center2 = (w as f32,h as f32),
 		3 => center2 = (0 as f32,w as f32),
 		_ => panic!("This should not append"),
 	}
@@ -185,11 +184,11 @@ fn rotate_face_center(piece_size: (u32,u32),face: &PieceFace, faceid: usize,want
 	};
 
 	//invert
-	if ret.top.1 > ret.bottom.1 {
-		//mem::swap(&mut ret.top,&mut ret.bottom);
+	if ret.top.1 > ret.bottom.1 && (want_on == 1 || want_on == 3) {
+		mem::swap(&mut ret.top,&mut ret.bottom);
 	}
 
-	println!("AFTER => {:?}",ret);
+	//println!("AFTER => {:?}",ret);
 
 	ret
 }
@@ -210,17 +209,74 @@ fn add_mask(out: &mut GrayImage,mask: &GrayImage,pos: (u32,u32)) {
 	}
 }
 
-fn calc_right_mask_pos(left_face: &PieceFace,right_face: &PieceFace,left_pos:(u32,u32)) -> (u32,u32) {
+fn calc_right_mask_pos(left_face: &PieceFace,right_face: &PieceFace,left_pos:(u32,u32),offset:(i32,i32)) -> (u32,u32) {
 	//calc angle
-	println!("FACE {:?} {:?}",left_face,right_face);
+	//println!("FACE {:?} {:?}",left_face,right_face);
 	let (x0,y0) = (left_pos.0 as f32,left_pos.1 as f32);
-	let x = x0 as f32 + left_face.top.0 - right_face.top.0;
-	let y = y0 as f32 + left_face.top.1 - right_face.top.1;
-	println!("MOVE {:?}",(x,y));
+	let (ox,oy) = (offset.0 as f32,offset.1 as f32);
+	let x = ox + x0 as f32 + left_face.top.0 - right_face.top.0;
+	let y = oy + y0 as f32 + left_face.top.1 - right_face.top.1;
+	//println!("MOVE {:?}",(x,y));
 	(x as u32,y as u32)
 }
 
+fn count_superp(img: &GrayImage,rect:(u32,u32,u32,u32)) -> u32 {
+	let (x0,y0,x1,y1) = rect;
+	let c = Luma([common::MASK_PIECE_PIXEL * 2]);
+	let back = Luma([common::MASK_BACKGROUND]);
+	let mut cnt = 0;
+	for y in x0..x1 {
+		for x in y0..y1 {
+			let color = img.get_pixel(x,y);
+			if *color == c || *color == back {
+				cnt += 1;
+			}
+		}
+	}
+
+	cnt
+}
+
 fn calc_face_mask_dist(left: &Piece, fid_left: usize,right: &Piece, fid_right: usize,id: u32,dump: i32) -> f32 {
+	let mut min = f32::MAX;
+	let base = format!("tmp-{}:{}-{}:{}.txt",left.id,fid_left,right.id,fid_right);
+    let mut file = File::create(base).unwrap();
+	for y in -common::MATCH_MASK_OFFET..common::MATCH_MASK_OFFET {
+		for x in -common::MATCH_MASK_OFFET..common::MATCH_MASK_OFFET {
+			let dist = calc_face_mask_dist_offset(left,fid_left,right,fid_right,id,dump,(x*2,y*2));
+			file.write_fmt(format_args!("{} {} {}\n",x,y,dist));
+			if dist < min {
+				min = dist;
+			}
+		}
+	}
+
+	min
+}
+
+fn move_rect(rect:(u32,u32,u32,u32),pos:(u32,u32)) -> (u32,u32,u32,u32) {
+	(rect.0 + pos.0,rect.1 + pos.1, rect.2 + pos.0, rect.3 + pos.1)
+}
+
+fn get_intersection(left: &GrayImage,pleft:(u32,u32),right: &GrayImage,pright:(u32,u32)) -> (u32,u32,u32,u32) {
+	//extract surrounding
+	let rect_left = step5_corners::extract_surrounding_rect(left);
+	let rect_right = step5_corners::extract_surrounding_rect(right);
+
+	//move
+	let rect_left = move_rect(rect_left,pleft);
+	let rect_right = move_rect(rect_right,pright);
+
+	//intersect
+	let xmin = rect_right.0;
+	let xmax = rect_left.2;
+	let ymin = rect_left.1.max(rect_right.1);
+	let ymax = rect_left.3.min(rect_right.3);
+
+	(xmin,ymin,xmax,ymax)
+}
+
+fn calc_face_mask_dist_offset(left: &Piece, fid_left: usize,right: &Piece, fid_right: usize,id: u32,dump: i32,offset:(i32,i32)) -> f32 {
 	//compute size
 	let (lw,lh) = left.mask.dimensions();
 	let (rw,rh) = right.mask.dimensions();
@@ -229,56 +285,62 @@ fn calc_face_mask_dist(left: &Piece, fid_left: usize,right: &Piece, fid_right: u
 	//build out image & roate masks
 	let mut img = GrayImage::new(size,size);
 	let left_mask = get_rotated(&left.mask,fid_left,1);
-	let right_mask = get_rotated(&right.mask,fid_right,1);
+	let right_mask = get_rotated(&right.mask,fid_right,3);
 
 	//prepare points
 	let left_face = rotate_face_center((lw,lh),&left.faces[fid_left],fid_left,1);
-	//let right_face = rotate_face_center((rw,rh),&right.faces[fid_right],fid_right,1);
+	let right_face = rotate_face_center((rw,rh),&right.faces[fid_right],fid_right,3);
 
 	//fill unintesting pixels
 	//TODO
 
 	//rotate right
 	//let right_mask = imageops::rotate180(&right_mask);
-	//let right_face = rotate_face_center((rw,rh),&right.faces[fid_right],fid_right,3);
+	let right_face = rotate_face_center((rw,rh),&right.faces[fid_right],fid_right,3);
 
 	//calculate piece position
 	let (lw,lh) = left_mask.dimensions();
 	let left_pos = (size/2 - lw,size/2-lh/2);
-	println!("LEFT {:?}",left_pos);
+	//println!("LEFT {:?}",left_pos);
 	let right_pos = (size/2, size/2);
-	//let right_pos = calc_right_mask_pos(&left_face,&right_face,left_pos);
+	let right_pos = calc_right_mask_pos(&left_face,&right_face,left_pos,offset);
 
 	//draw
 	add_mask(&mut img,&left_mask,left_pos);
-	step5_corners::draw_point(&mut img,(left_pos.0+left_face.top.0 as u32,left_pos.1+left_face.top.1 as u32));
-	step5_corners::draw_point(&mut img,(left_pos.0+left_face.bottom.0 as u32,left_pos.1+left_face.bottom.1 as u32));
-	step5_corners::draw_point(&mut img,(left_pos.0+left_face.middle.0 as u32,left_pos.1+left_face.middle.1 as u32));
-	
+	//step5_corners::draw_point(&mut img,(left_pos.0+left_face.top.0 as u32,left_pos.1+left_face.top.1 as u32));
 	//step5_corners::draw_point(&mut img,(left_pos.0+left_face.bottom.0 as u32,left_pos.1+left_face.bottom.1 as u32));
-	//add_mask(&mut img,&right_mask,right_pos);
+	//step5_corners::draw_point(&mut img,(left_pos.0+left_face.middle.0 as u32,left_pos.1+left_face.middle.1 as u32));
+	
+	add_mask(&mut img,&right_mask,right_pos);
 	//step5_corners::draw_point(&mut img,(right_pos.0+right_face.top.0 as u32,right_pos.1+right_face.top.1 as u32));
+	//step5_corners::draw_point(&mut img,(right_pos.0+right_face.middle.0 as u32,right_pos.1+right_face.middle.1 as u32));
+	//step5_corners::draw_point(&mut img,(right_pos.0+right_face.bottom.0 as u32,right_pos.1+right_face.bottom.1 as u32));
 
 	//save into file
-	if dump == 0 || dump == 10 {
-		let fname = format!("step-10-mask-match-{:05}-{}:{}-{}:{}.png",id,left.id,fid_left,right.id,fid_right);
+	if dump == -10 && (left.id == 3 && fid_left == 1 || right.id == 3 && fid_right == 1) {
+		let fname = format!("step-10-mask-match-{:05}-{}:{}-{}:{}-{}:{}.png",id,left.id,fid_left,right.id,fid_right,offset.0,offset.1);
 		img.save(fname).unwrap();
 	}
 
 	//ret
-	0.0
+	let rect = get_intersection(&left_mask,left_pos,&right_mask,right_pos);
+	//println!("interect {:?}",rect);
+	count_superp(&img,rect) as f32
 }
 
 pub fn compute_matching(pieces: &mut PieceVec, dump:i32) {
 	//to extract media dist
 	let mut full_soluce: Vec<(f32,f32,bool,usize,usize,usize,usize)> = vec!();
 	let mut file: Option<File> = None;
+	let mut file2: Option<File> = None;
 
 	//open for dump
 	//dump db into file
     if dump == 0 || dump == 10 {
         let base = format!("step-10-matching.txt");
         file = Some(File::create(base).unwrap());
+		let base2 = format!("step-10-matching-2.txt");
+        file2 = Some(File::create(base2).unwrap());
     }
 
 	//loop on all pieces
@@ -292,14 +354,16 @@ pub fn compute_matching(pieces: &mut PieceVec, dump:i32) {
 			//loop on all faces to match
 			for fid1 in 0..4 {
 				let face1 = &p1.faces[fid1];
+				let face1 = rotate_face_center(p1.mask.dimensions(),&face1,fid1,1);
 				let face1 = move_face(&face1,face1.top.0,face1.top.1);
 
 				for fid2 in 0..4 {
 					let face2 = &p2.faces[fid2];
+					let face2 = rotate_face_center(p2.mask.dimensions(),&face2,fid2,3);
 
 					//check if can match then match
 					if face1.mode != face2.mode {
-						let (dist1,angle1,f1) = check_quick_face_distance(&face1,face2);
+						let (dist1,angle1,f1) = check_quick_face_distance(&face1,&face2);
 						let (dist2,angle2,f2) = check_quick_face_distance_mirrored(&face1,&face2);
 						let dist = dist1.min(dist2);
 						if dist1 < dist2 {
@@ -325,20 +389,25 @@ pub fn compute_matching(pieces: &mut PieceVec, dump:i32) {
 	println!("Calc median");
 	full_soluce.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(Ordering::Equal));
     let mid = full_soluce.len() / 2;
-	let cut = full_soluce[mid].0/2.0;
+	let cut = full_soluce[mid].0;///2.0;
 	println!("median = {}, median/2 = {}",full_soluce[mid].0,cut);
 
 	//apply second step filter
 	let mut filtered_soluce: Vec<(f32,f32,bool,usize,usize,usize,usize)> = vec!();
 	let mut id = 0;
 	for m in full_soluce {
-		let (_,angle,_mirrored,id1,fid1,id2,fid2) = m;
-		let p1 = &pieces[id1].lock().unwrap();
-		let p2 = &pieces[id2].lock().unwrap();
-		let fdist = calc_face_mask_dist(p1,fid1,p2,fid2,id,dump);
-		filtered_soluce.push((fdist,angle,_mirrored,id1,fid1,id2,fid2));
-		id += 1;
-		panic!("wait");
+		let (dist,angle,_mirrored,id1,fid1,id2,fid2) = m;
+		if dist < cut {
+			let p1 = &pieces[id1].lock().unwrap();
+			let p2 = &pieces[id2].lock().unwrap();
+			let fdist = calc_face_mask_dist(p1,fid1,p2,fid2,id,dump);
+			match file2.as_mut() {
+				Some(f) => f.write_fmt(format_args!("Match {}:{} <-> {}:{} -> {}\n",id1,fid1,id2,fid2,fdist)).unwrap(),
+				None => {}
+			}
+			filtered_soluce.push((fdist,angle,_mirrored,id1,fid1,id2,fid2));
+			id += 1;
+		}
 	}
 
 	//apply cut on new filtered list

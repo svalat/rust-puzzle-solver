@@ -29,3 +29,6 @@ pub const FIX_MIN_QUALITY: u32 = 16;
 //consts
 pub const ROTATE_ANGLE_RESOLUTION: u32 = 1;
 pub const FIX_ROTATE_ANGLE_RESOLUTION: u32 = 2;
+
+//matching
+pub const MATCH_MASK_OFFET: i32 = 5;

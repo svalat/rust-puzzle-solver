@@ -220,8 +220,8 @@ fn main() {
 	}*/
 
 	//build
-	//let sol = step11_build::build_solution(&mut all,dump);
+	let sol = step11_build::build_solution(&mut all,dump);
 
 	//draw
-	//step12_draw::draw_solution(&sol,&all,"step-12-solu-0001.png");
+	step12_draw::draw_solution(&sol,&all,"step-12-solu-0001.png");
 }
