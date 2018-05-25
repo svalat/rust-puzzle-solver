@@ -20,7 +20,7 @@ use std::io::Write;
 use std::mem;
 
 //extern
-use image::{GrayImage,imageops,Luma};
+use image::{GrayImage,RgbaImage,imageops,Luma,Rgba};
 
 //internal
 use piece::{PieceFace,PieceVec,PieceMatch,Piece};
@@ -44,15 +44,6 @@ fn calc_dist(p1:(f32,f32),p2:(f32,f32)) -> f32 {
 	let dy = y2-y1;
 	let ret = (dx*dx + dy*dy).sqrt();
 	ret
-}
-
-fn face_mirror_on_x(face: &PieceFace) -> PieceFace {
-	PieceFace {
-		top: (-face.top.0,face.top.1),
-		middle: (-face.middle.0,face.middle.1),
-		bottom: (-face.bottom.0,face.bottom.1),
-		mode: face.mode,
-	}
 }
 
 fn face_mirror_on_y(face: &PieceFace) -> PieceFace {
@@ -138,7 +129,27 @@ fn  cacl_rotate(face: usize, want_on: usize) -> usize {
 	((want_on + 4) - face) % 4
 }
 
-fn get_rotated(img: &GrayImage,face: usize,want_on:usize) -> GrayImage {
+//TODO make generic
+fn get_rotated_mask(img: &GrayImage,face: usize,want_on:usize) -> GrayImage {
+	//calc roation
+	let rot = cacl_rotate(face,want_on);
+
+	//rotate
+	let rotated;
+	match rot {
+		0 => rotated = img.clone(),
+		1 => rotated = imageops::rotate90(img),
+		2 => rotated = imageops::rotate180(img),
+		3 => rotated = imageops::rotate270(img),
+		_ => panic!("Invalid value should be 0,1,2 or 3 !"),
+	}
+
+	//ret
+	rotated
+}
+
+//TODO make generic
+fn get_rotated_rgba(img: &RgbaImage,face: usize,want_on:usize) -> RgbaImage {
 	//calc roation
 	let rot = cacl_rotate(face,want_on);
 
@@ -159,7 +170,6 @@ fn get_rotated(img: &GrayImage,face: usize,want_on:usize) -> GrayImage {
 fn rotate_face_center(piece_size: (u32,u32),face: &PieceFace, faceid: usize,want_on:usize) -> PieceFace {
 	//calc roation
 	let (w,h) = piece_size;
-	let center = (w as f32/2.0,h as f32/2.0);
 	let rot = cacl_rotate(faceid,want_on);
 	let angle = rot as f32 * 90.0;
 
@@ -191,6 +201,44 @@ fn rotate_face_center(piece_size: (u32,u32),face: &PieceFace, faceid: usize,want
 	//println!("AFTER => {:?}",ret);
 
 	ret
+}
+
+fn is_border_gray(color:&Rgba<u8>) -> bool {
+	let mut ret = true;
+	let mut sum = 0;
+
+	for i in 0..3 {
+		let next = (i + 1) % 3;
+		let delta = (color.data[i] as i16 - color.data[next] as i16).abs();
+		sum += delta;
+		if delta > 25 {
+			ret = false;
+		}
+		if color.data[i] > 180 || color.data[i] < 10 {
+			ret = false;
+		}
+	} 
+
+	if sum / 3 > 10 {
+		ret = false;
+	}
+	
+	ret
+}
+
+fn ignore_gray_overlap(out: &mut GrayImage, image: &RgbaImage, pos: (u32,u32),color: u8) {
+	let (w,h) = image.dimensions();
+	let (x0,y0) = pos;
+	let color  = Luma([color]);
+	//let mcolor = Luma([common::MASK_PIECE_PIXEL * 2]);
+	for y in 0..h {
+		for x in 0..w {
+			let pixel = image.get_pixel(x,y);	
+			if is_border_gray(pixel) {
+				out.put_pixel(x+x0,y+y0,color);
+			}
+		}
+	}
 }
 
 fn add_mask(out: &mut GrayImage,mask: &GrayImage,pos: (u32,u32)) {
@@ -244,7 +292,7 @@ fn calc_face_mask_dist(left: &Piece, fid_left: usize,right: &Piece, fid_right: u
 	for y in -common::MATCH_MASK_OFFET..common::MATCH_MASK_OFFET {
 		for x in -common::MATCH_MASK_OFFET..common::MATCH_MASK_OFFET {
 			let dist = calc_face_mask_dist_offset(left,fid_left,right,fid_right,id,dump,(x*2,y*2));
-			file.write_fmt(format_args!("{} {} {}\n",x,y,dist));
+			file.write_fmt(format_args!("{} {} {}\n",x,y,dist)).unwrap();
 			if dist < min {
 				min = dist;
 			}
@@ -284,26 +332,25 @@ fn calc_face_mask_dist_offset(left: &Piece, fid_left: usize,right: &Piece, fid_r
 
 	//build out image & roate masks
 	let mut img = GrayImage::new(size,size);
-	let left_mask = get_rotated(&left.mask,fid_left,1);
-	let right_mask = get_rotated(&right.mask,fid_right,3);
+	let mut left_mask = get_rotated_mask(&left.mask,fid_left,1);
+	let mut right_mask = get_rotated_mask(&right.mask,fid_right,3);
+	let left_img = get_rotated_rgba(&left.image,fid_left,1);
+	let right_img = get_rotated_rgba(&right.image,fid_right,3);
 
 	//prepare points
 	let left_face = rotate_face_center((lw,lh),&left.faces[fid_left],fid_left,1);
 	let right_face = rotate_face_center((rw,rh),&right.faces[fid_right],fid_right,3);
-
-	//fill unintesting pixels
-	//TODO
-
-	//rotate right
-	//let right_mask = imageops::rotate180(&right_mask);
-	let right_face = rotate_face_center((rw,rh),&right.faces[fid_right],fid_right,3);
-
+	
 	//calculate piece position
 	let (lw,lh) = left_mask.dimensions();
 	let left_pos = (size/2 - lw,size/2-lh/2);
 	//println!("LEFT {:?}",left_pos);
-	let right_pos = (size/2, size/2);
+	//let right_pos = (size/2, size/2);
 	let right_pos = calc_right_mask_pos(&left_face,&right_face,left_pos,offset);
+
+	//ignore gray in overlap
+	//ignore_gray_overlap(&mut left_mask,&left_img,(0,0),common::MASK_BACKGROUND);
+	//ignore_gray_overlap(&mut right_mask,&right_img,(0,0)common::MASK_BACKGROUND);
 
 	//draw
 	add_mask(&mut img,&left_mask,left_pos);
@@ -316,8 +363,12 @@ fn calc_face_mask_dist_offset(left: &Piece, fid_left: usize,right: &Piece, fid_r
 	//step5_corners::draw_point(&mut img,(right_pos.0+right_face.middle.0 as u32,right_pos.1+right_face.middle.1 as u32));
 	//step5_corners::draw_point(&mut img,(right_pos.0+right_face.bottom.0 as u32,right_pos.1+right_face.bottom.1 as u32));
 
+	//ignore gray in overlap
+	//ignore_gray_overlap(&mut img,&left_img,left_pos,common::MASK_IGNORE_SUPERP);
+	//ignore_gray_overlap(&mut img,&right_img,right_pos,common::MASK_IGNORE_SUPERP);
+
 	//save into file
-	if dump == -10 && (left.id == 3 && fid_left == 1 || right.id == 3 && fid_right == 1) {
+	if dump == -10 && (left.id == 4 && fid_left == 1 || right.id == 4 && fid_right == 1) {
 		let fname = format!("step-10-mask-match-{:05}-{}:{}-{}:{}-{}:{}.png",id,left.id,fid_left,right.id,fid_right,offset.0,offset.1);
 		img.save(fname).unwrap();
 	}
@@ -389,7 +440,7 @@ pub fn compute_matching(pieces: &mut PieceVec, dump:i32) {
 	println!("Calc median");
 	full_soluce.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(Ordering::Equal));
     let mid = full_soluce.len() / 2;
-	let cut = full_soluce[mid].0;///2.0;
+	let cut = full_soluce[mid].0; //2.0;
 	println!("median = {}, median/2 = {}",full_soluce[mid].0,cut);
 
 	//apply second step filter
@@ -414,7 +465,7 @@ pub fn compute_matching(pieces: &mut PieceVec, dump:i32) {
 	println!("Calc median");
 	filtered_soluce.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(Ordering::Equal));
     let mid = filtered_soluce.len() / 2;
-	let cut = filtered_soluce[mid].0/2.0;
+	let cut = filtered_soluce[mid].0;///2.0;
 	println!("median = {}, median/2 = {}",filtered_soluce[mid].0,cut);
 
 	//loop and save

@@ -275,7 +275,7 @@ fn check_if_same_soluce(s1: &Soluce,s2:&Soluce) -> bool {
 	ret
 }
 
-fn search_next_step_recurse(pieces: &PieceVec, current: &mut Soluce, usage: &mut PieceUsage, proposal: &mut SoluceProposal,depth:u32) {
+fn search_next_step_recurse(pieces: &PieceVec, current: &mut Soluce, usage: &mut PieceUsage, proposal: &mut SoluceProposal,depth:u32,dist:f32) {
     //search an intersting position
     let (w,h) = (current.len_of(Axis(0)),current.len_of(Axis(1)));
 	let mut found = false;
@@ -328,7 +328,7 @@ fn search_next_step_recurse(pieces: &PieceVec, current: &mut Soluce, usage: &mut
 								//check if match with all neighboors
 								if check_match_all_neighboors(pieces,current,(x,y)) {
 									//println!("Recurse {}",depth);
-									search_next_step_recurse(pieces,current,usage,proposal,depth+1);
+									search_next_step_recurse(pieces,current,usage,proposal,depth+1,dist + c.distance);
 									found = true;
 								}
 
@@ -359,7 +359,7 @@ fn search_next_step_recurse(pieces: &PieceVec, current: &mut Soluce, usage: &mut
 			}
 		}
 
-		println!("Ok solution : {}",cnt);
+		//println!("Ok solution : {} {}",cnt,dist);
 		if cnt > proposal.nb {
 			println!("CLEAR");
 			proposal.list.clear();
@@ -380,7 +380,7 @@ fn search_next_step_recurse(pieces: &PieceVec, current: &mut Soluce, usage: &mut
 			if keep {
 				let copy = current.clone();
 				proposal.list.push(copy);
-				//println!("{}",current);
+				println!("{}",current);
 			}
 
 			//cut
@@ -423,7 +423,7 @@ pub fn build_solution(pieces: &PieceVec, _dump:i32) -> Soluce {
         usage[i] = true;
 
         //serch next step
-        search_next_step_recurse(pieces,&mut current,&mut usage,&mut proposal,1);
+        search_next_step_recurse(pieces,&mut current,&mut usage,&mut proposal,1,0.0);
 
         //remove piece for next round
         usage[i] = false;

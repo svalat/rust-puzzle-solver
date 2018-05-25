@@ -231,32 +231,10 @@ impl Piece {
 		}
 	}
 
-	fn helper_rotate_coord(value:(u32,u32),rotate:bool,mirror:bool) -> (f32,f32) {
-		//extract and convert
-		let mut x = value.0 as f32;
-		let mut y = value.1 as f32;
-
-		//rotate
-		if rotate {
-			mem::swap(&mut x,&mut y);
-		}
-
-		//mirror
-		if mirror {
-			x = -x;
-		}
-
-		//ret
-		(x,y)
-	}
-
 	//help
-	fn helper_face(top:(u32,u32),middle:(u32,u32),bottom:(u32,u32),rotate:bool,mirror:bool,mode:PieceSideType) -> PieceFace
+	fn helper_face(top:(u32,u32),middle:(u32,u32),bottom:(u32,u32),mode:PieceSideType) -> PieceFace
 	{
 		PieceFace {
-			/*top: Self::helper_rotate_coord(top,rotate,mirror),
-			middle: Self::helper_rotate_coord(middle,rotate,mirror),
-			bottom: Self::helper_rotate_coord(bottom,rotate,mirror),*/
 			top: (top.0 as f32,top.1 as f32),
 			middle: (middle.0 as f32,middle.1 as f32),
 			bottom: (bottom.0 as f32,bottom.1 as f32),
@@ -266,9 +244,9 @@ impl Piece {
 
 	//extract faces to help matching
 	pub fn extract_faces(self: &mut Self) {
-		self.faces[TOP] = Self::helper_face(self.points.top_left_corner,self.points.top_shape,self.points.top_right_corner,true,true,self.side_infos.top);
-		self.faces[RIGHT] = Self::helper_face(self.points.top_right_corner,self.points.right_shape,self.points.bottom_right_corner,false,false,self.side_infos.right);
-		self.faces[BOTTOM] = Self::helper_face(self.points.bottom_left_corner,self.points.bottom_shape,self.points.bottom_right_corner,true,false,self.side_infos.bottom);
-		self.faces[LEFT] = Self::helper_face(self.points.top_left_corner,self.points.left_shape,self.points.bottom_left_corner,false,true,self.side_infos.left);
+		self.faces[TOP] = Self::helper_face(self.points.top_left_corner,self.points.top_shape,self.points.top_right_corner,self.side_infos.top);
+		self.faces[RIGHT] = Self::helper_face(self.points.top_right_corner,self.points.right_shape,self.points.bottom_right_corner,self.side_infos.right);
+		self.faces[BOTTOM] = Self::helper_face(self.points.bottom_left_corner,self.points.bottom_shape,self.points.bottom_right_corner,self.side_infos.bottom);
+		self.faces[LEFT] = Self::helper_face(self.points.top_left_corner,self.points.left_shape,self.points.bottom_left_corner,self.side_infos.left);
 	}
 }
