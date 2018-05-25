@@ -31,4 +31,5 @@ pub const ROTATE_ANGLE_RESOLUTION: u32 = 1;
 pub const FIX_ROTATE_ANGLE_RESOLUTION: u32 = 2;
 
 //matching
-pub const MATCH_MASK_OFFET: i32 = 5;
+pub const MATCH_MASK_OFFET: i32 = 3;
+pub const MATCH_MASK_OFFSET_STEP:i32 = 3;

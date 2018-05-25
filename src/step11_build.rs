@@ -88,6 +88,7 @@ type SoluceVec = Vec<Soluce>;
 struct SoluceProposal {
     list: SoluceVec,
     nb: u32,
+	connectivity: u32,
 }
 
 fn cell_has_piece(current: &Soluce,x : usize, y: usize, dx: i32, dy: i32) -> Option<(usize,usize)> {
@@ -275,6 +276,25 @@ fn check_if_same_soluce(s1: &Soluce,s2:&Soluce) -> bool {
 	ret
 }
 
+fn calc_connectivity(soluce: &Soluce) -> u32 {
+	let (w,h) = (soluce.len_of(Axis(0)),soluce.len_of(Axis(1)));
+	let mut cnt = 0;
+	
+	for y in 0..h {
+		for x in 0..w {
+			let cell = soluce.get((x,y)).unwrap();
+			if cell.piece_id != NONE {
+				cnt += (soluce.get((x-1,y)).unwrap().piece_id != NONE) as u32;
+				cnt += (soluce.get((x+1,y)).unwrap().piece_id != NONE) as u32;
+				cnt += (soluce.get((x,y-1)).unwrap().piece_id != NONE) as u32;
+				cnt += (soluce.get((x,y+1)).unwrap().piece_id != NONE) as u32;
+			}
+		}
+	}
+
+	cnt
+}
+
 fn search_next_step_recurse(pieces: &PieceVec, current: &mut Soluce, usage: &mut PieceUsage, proposal: &mut SoluceProposal,depth:u32,dist:f32) {
     //search an intersting position
     let (w,h) = (current.len_of(Axis(0)),current.len_of(Axis(1)));
@@ -353,6 +373,7 @@ fn search_next_step_recurse(pieces: &PieceVec, current: &mut Soluce, usage: &mut
 	if !found {
 		//count pieces used
 		let mut cnt = 0;
+		let connectivity = calc_connectivity(&current);
 		for v in usage {
 			if *v {
 				cnt+=1;
@@ -361,11 +382,17 @@ fn search_next_step_recurse(pieces: &PieceVec, current: &mut Soluce, usage: &mut
 
 		//println!("Ok solution : {} {}",cnt,dist);
 		if cnt > proposal.nb {
-			println!("CLEAR");
+			println!("CLEAR nb");
 			proposal.list.clear();
 			proposal.nb = cnt;
+			proposal.connectivity = connectivity;
+		} else if cnt == proposal.nb && connectivity > proposal.connectivity {
+			println!("CLEAR connectivity");
+			proposal.list.clear();
+			proposal.nb = cnt;
+			proposal.connectivity = connectivity;
 		}
-		if cnt == proposal.nb {
+		if cnt == proposal.nb && proposal.connectivity == connectivity {
 			println!("KEEP -> {}",proposal.list.len());
 			let mut keep = true;
 
@@ -402,6 +429,7 @@ pub fn build_solution(pieces: &PieceVec, _dump:i32) -> SoluceVec {
     let mut proposal = SoluceProposal {
         list:vec!(),
         nb:0,
+		connectivity:0,
     };
 
     //init

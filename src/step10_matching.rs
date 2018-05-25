@@ -291,14 +291,14 @@ fn count_superp(img: &GrayImage,rect:(u32,u32,u32,u32)) -> u32 {
 	let c = Luma([common::MASK_PIECE_PIXEL * 2]);
 	let back = Luma([common::MASK_BACKGROUND]);
 	let mut cnt = 0;
-	for y in x0..x1 {
-		for x in y0..y1 {
+	for y in y0..y1 {
+		for x in x0..x1 {
 			let color = img.get_pixel(x,y);
 			if *color == back {
 				cnt += 1;
 			}
 			if *color == c {
-				cnt += 2;
+				cnt += 1;
 			}
 		}
 	}
@@ -308,12 +308,12 @@ fn count_superp(img: &GrayImage,rect:(u32,u32,u32,u32)) -> u32 {
 
 fn calc_face_mask_dist(left: &Piece, fid_left: usize,right: &Piece, fid_right: usize,id: u32,dump: i32) -> f32 {
 	let mut min = f32::MAX;
-	let base = format!("tmp-{}:{}-{}:{}.txt",left.id,fid_left,right.id,fid_right);
-    let mut file = File::create(base).unwrap();
+	//let base = format!("tmp-{}:{}-{}:{}.txt",left.id,fid_left,right.id,fid_right);
+    //let mut file = File::create(base).unwrap();
 	for y in -common::MATCH_MASK_OFFET..common::MATCH_MASK_OFFET {
 		for x in -common::MATCH_MASK_OFFET..common::MATCH_MASK_OFFET {
-			let dist = calc_face_mask_dist_offset(left,fid_left,right,fid_right,id,dump,(x*2,y*2));
-			file.write_fmt(format_args!("{} {} {}\n",x,y,dist)).unwrap();
+			let dist = calc_face_mask_dist_offset(left,fid_left,right,fid_right,id,dump,(x*common::MATCH_MASK_OFFSET_STEP,y*common::MATCH_MASK_OFFSET_STEP));
+			//file.write_fmt(format_args!("{} {} {}\n",x,y,dist)).unwrap();
 			if dist < min {
 				min = dist;
 			}
@@ -347,6 +347,43 @@ fn get_intersection(left: &GrayImage,left_face: &PieceFace,pleft:(u32,u32),right
 	(xmin,ymin,xmax+1,ymax+1)
 }
 
+fn hide_external_black_pixel(mask: &mut GrayImage,face: &PieceFace) {
+	//vars
+	let (w,h) = mask.dimensions();
+	let back = Luma([common::MASK_BACKGROUND]);
+	let ignore = Luma([common::MASK_IGNORE_SUPERP]);
+
+	//top
+	let xmax = face.top.0 as u32;
+	assert!(xmax < w);
+	for x in 0..xmax {
+		//let y0 = face.top.1 as u32;
+		let y0 = 0;
+		for y in y0..h {
+			if *mask.get_pixel(x,y) == back {
+				mask.put_pixel(x,y,ignore);
+			} else {
+				break;
+			}
+		}
+	}
+
+	//bottom
+	let xmax = face.bottom.0 as u32;
+	assert!(xmax < w);
+	for x in 0..xmax {
+		//let y0 = h - face.bottom.1 as u32;
+		let y0 = 0;
+		for y in y0..h {
+			if *mask.get_pixel(x,h-y-1) == back {
+				mask.put_pixel(x,h-y-1,ignore);
+			} else {
+				break;
+			}
+		}
+	}
+}
+
 fn calc_face_mask_dist_offset(left: &Piece, fid_left: usize,right: &Piece, fid_right: usize,id: u32,dump: i32,offset:(i32,i32)) -> f32 {
 	//compute size
 	let (lw,lh) = left.mask.dimensions();
@@ -362,12 +399,24 @@ fn calc_face_mask_dist_offset(left: &Piece, fid_left: usize,right: &Piece, fid_r
 
 	//rotate
 	let mut left_mask = get_rotated_mask(&left.mask,fid_left,1);
-	let mut right_mask = get_rotated_mask(&right.mask,fid_right,3);
+	//special trick to use hige_external_black_pixel
+	let mut right_mask = get_rotated_mask(&right.mask,fid_right,1);
+
+	//rotate color
 	let left_img = get_rotated_rgba(&left.image,fid_left,1);
 	let right_img = get_rotated_rgba(&right.image,fid_right,3);
 
 	//prepare points
 	let left_face = rotate_face_center((lw,lh),&left.faces[fid_left],fid_left,1);
+	//special trick to use hige_external_black_pixel
+	let right_face = rotate_face_center((rw,rh),&right.faces[fid_right],fid_right,1);
+
+	//fix mask
+	hide_external_black_pixel(&mut left_mask,&left_face);
+	hide_external_black_pixel(&mut right_mask,&right_face);
+
+	//turn back the rigth piece
+	let right_mask = imageops::rotate180(&right_mask);
 	let right_face = rotate_face_center((rw,rh),&right.faces[fid_right],fid_right,3);
 	
 	//calculate piece position
@@ -525,7 +574,7 @@ pub fn compute_matching(pool: &Pool,pieces: &mut PieceVec, dump:i32) {
 	//loop and save
 	for m in filtered_soluce.lock().unwrap().iter() {
 		let (dist,angle,_mirrored,id1,fid1,id2,fid2) = *m;
-		if dist <= cut {
+		//if dist <= cut {
 			{
 				let p1 = &mut pieces[id1].write().unwrap();
 				p1.matches[fid1].push(PieceMatch{
@@ -545,6 +594,14 @@ pub fn compute_matching(pool: &Pool,pieces: &mut PieceVec, dump:i32) {
 					distance: dist,
 				});
 			}
+		//}
+	}
+
+	for p in pieces {
+		let mut pp = p.write().unwrap();
+		for f in 0..4 {
+			pp.matches[f].sort_by(|a, b| a.distance.partial_cmp(&b.distance).unwrap_or(Ordering::Equal));
+			pp.matches[f].truncate(1);
 		}
 	}
 }
