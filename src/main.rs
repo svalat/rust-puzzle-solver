@@ -36,7 +36,7 @@ use argparse::{ArgumentParser, Store, List};
 //load std
 use std::fs::File;
 use std::path::Path;
-use std::sync::{Arc,Mutex};
+use std::sync::{Arc,RwLock};
 
 //pool
 use scoped_pool::Pool;
@@ -121,7 +121,7 @@ fn main() {
 					//extract into list
 					let (_,_,w,h) = square;
 					if w*h > 600 {
-						all.push(Arc::new(Mutex::new(piece::Piece::new(rgba,&background,square,id))));
+						all.push(Arc::new(RwLock::new(piece::Piece::new(rgba,&background,square,id))));
 						id = id + 1;
 					} else {
 						println!("IGNORE, too small !");
@@ -149,7 +149,7 @@ fn main() {
 	pool.scoped(|scope| {
 		for pp in all.iter_mut() {
 			scope.execute(move || {
-				let mut p = pp.lock().unwrap();
+				let mut p = pp.write().unwrap();
 				let angle = step3_rotate::find_best_rectangle(&p.mask);
 				p.angle = angle;
 				println!("=============> {:?} => {:?} <==============",p.id,angle);
@@ -174,7 +174,7 @@ fn main() {
 	pool.scoped(|scope| {
 		for pp in all.iter_mut() {
 			scope.execute(move || {
-				let mut p = pp.lock().unwrap();
+				let mut p = pp.write().unwrap();
 				step9_cleanup::clear_debug_markers(&mut p.mask);
 				if dump == 0 || dump == 9 {
 					p.save(9,"cleanup");
@@ -184,7 +184,7 @@ fn main() {
 	});
 
 	//do matchin
-	step10_matching::compute_matching(&mut all,dump);
+	step10_matching::compute_matching(&pool,&mut all,dump);
 
 	//let links
 	/*{
@@ -223,5 +223,8 @@ fn main() {
 	let sol = step11_build::build_solution(&mut all,dump);
 
 	//draw
-	step12_draw::draw_solution(&sol,&all,"step-12-solu-0001.png");
+	for (i,s) in sol.iter().enumerate() {
+		let fname = format!("step-12-solution-{}.png",i);
+		step12_draw::draw_solution(&s,&all,&fname);
+	}
 }

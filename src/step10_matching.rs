@@ -12,15 +12,18 @@
 
 //import
 extern crate image;
+extern crate scoped_pool;
 
 //std
 use std::f32;
 use std::fs::File;
 use std::io::Write;
 use std::mem;
+use std::sync::{Arc,Mutex};
 
 //extern
 use image::{GrayImage,RgbaImage,imageops,Luma,Rgba};
+use scoped_pool::Pool;
 
 //internal
 use piece::{PieceFace,PieceVec,PieceMatch,Piece};
@@ -379,11 +382,11 @@ fn calc_face_mask_dist_offset(left: &Piece, fid_left: usize,right: &Piece, fid_r
 	count_superp(&img,rect) as f32
 }
 
-pub fn compute_matching(pieces: &mut PieceVec, dump:i32) {
+pub fn compute_matching(pool: &Pool,pieces: &mut PieceVec, dump:i32) {
 	//to extract media dist
 	let mut full_soluce: Vec<(f32,f32,bool,usize,usize,usize,usize)> = vec!();
 	let mut file: Option<File> = None;
-	let mut file2: Option<File> = None;
+	let mut file2: Arc<Mutex<Option<File>>> = Arc::new(Mutex::new(None));
 
 	//open for dump
 	//dump db into file
@@ -391,16 +394,16 @@ pub fn compute_matching(pieces: &mut PieceVec, dump:i32) {
         let base = format!("step-10-matching.txt");
         file = Some(File::create(base).unwrap());
 		let base2 = format!("step-10-matching-2.txt");
-        file2 = Some(File::create(base2).unwrap());
+        file2 = Arc::new(Mutex::new(Some(File::create(base2).unwrap())));
     }
 
 	//loop on all pieces
 	for i1 in 0..pieces.len() {
-		let p1 = &pieces[i1].lock().unwrap();
+		let p1 = &pieces[i1].read().unwrap();
 		
 		//match with all others
 		for i2 in (i1+1)..pieces.len() {
-			let p2 = &pieces[i2].lock().unwrap();
+			let p2 = &pieces[i2].read().unwrap();
 
 			//loop on all faces to match
 			for fid1 in 0..4 {
@@ -440,40 +443,53 @@ pub fn compute_matching(pieces: &mut PieceVec, dump:i32) {
 	println!("Calc median");
 	full_soluce.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(Ordering::Equal));
     let mid = full_soluce.len() / 2;
-	let cut = full_soluce[mid].0; //2.0;
+	let cut = full_soluce[mid].0 / 2.0;
 	println!("median = {}, median/2 = {}",full_soluce[mid].0,cut);
 
 	//apply second step filter
-	let mut filtered_soluce: Vec<(f32,f32,bool,usize,usize,usize,usize)> = vec!();
-	let mut id = 0;
-	for m in full_soluce {
-		let (dist,angle,_mirrored,id1,fid1,id2,fid2) = m;
-		if dist < cut {
-			let p1 = &pieces[id1].lock().unwrap();
-			let p2 = &pieces[id2].lock().unwrap();
-			let fdist = calc_face_mask_dist(p1,fid1,p2,fid2,id,dump);
-			match file2.as_mut() {
-				Some(f) => f.write_fmt(format_args!("Match {}:{} <-> {}:{} -> {}\n",id1,fid1,id2,fid2,fdist)).unwrap(),
-				None => {}
+	let filtered_soluce: Arc<Mutex<Vec<(f32,f32,bool,usize,usize,usize,usize)>>> = Arc::new(Mutex::new(vec!()));
+	let id = Arc::new(Mutex::new(0));
+	pool.scoped(|scope| {
+		for m in full_soluce {
+			let (dist,angle,_mirrored,id1,fid1,id2,fid2) = m;
+			if dist < cut {
+				let filtered_soluce = filtered_soluce.clone();
+				let file2 = file2.clone();
+				let pieces = pieces.clone();
+				let id = id.clone();
+				scope.execute(move || {
+					let i;
+					{
+						let mut tmp = id.lock().unwrap();
+						i = *tmp;
+						*tmp += 1;
+					}
+					let p1 = &pieces[id1].read().unwrap();
+					let p2 = &pieces[id2].read().unwrap();
+					let fdist = calc_face_mask_dist(p1,fid1,p2,fid2,i,dump);
+					match file2.lock().unwrap().as_mut() {
+						Some(f) => f.write_fmt(format_args!("Match {}:{} <-> {}:{} -> {}\n",id1,fid1,id2,fid2,fdist)).unwrap(),
+						None => {}
+					}
+					filtered_soluce.lock().unwrap().push((fdist,angle,_mirrored,id1,fid1,id2,fid2));
+				});
 			}
-			filtered_soluce.push((fdist,angle,_mirrored,id1,fid1,id2,fid2));
-			id += 1;
 		}
-	}
+	});
 
 	//apply cut on new filtered list
 	println!("Calc median");
-	filtered_soluce.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(Ordering::Equal));
-    let mid = filtered_soluce.len() / 2;
-	let cut = filtered_soluce[mid].0;///2.0;
-	println!("median = {}, median/2 = {}",filtered_soluce[mid].0,cut);
+	filtered_soluce.lock().unwrap().sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(Ordering::Equal));
+    let mid = filtered_soluce.lock().unwrap().len() / 2;
+	let cut = filtered_soluce.lock().unwrap()[mid].0 / 2.0;
+	println!("median = {}, median/2 = {}",filtered_soluce.lock().unwrap()[mid].0,cut);
 
 	//loop and save
-	for m in filtered_soluce {
-		let (dist,angle,_mirrored,id1,fid1,id2,fid2) = m;
+	for m in filtered_soluce.lock().unwrap().iter() {
+		let (dist,angle,_mirrored,id1,fid1,id2,fid2) = *m;
 		if dist <= cut {
 			{
-				let p1 = &mut pieces[id1].lock().unwrap();
+				let p1 = &mut pieces[id1].write().unwrap();
 				p1.matches[fid1].push(PieceMatch{
 					piece: id2,
 					side: fid2,
@@ -483,7 +499,7 @@ pub fn compute_matching(pieces: &mut PieceVec, dump:i32) {
 			}
 
 			{
-				let p2 = &mut pieces[id2].lock().unwrap();
+				let p2 = &mut pieces[id2].write().unwrap();
 				p2.matches[fid2].push(PieceMatch{
 					piece: id1,
 					side: fid1,

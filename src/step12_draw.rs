@@ -31,7 +31,7 @@ fn build_surround(pieces: &PieceVec) -> SurroundVec {
 
 	for p in pieces.iter() {
 		//extract rect
-		let (xmin,ymin,xmax,ymax) = extract_surrounding_rect(&p.lock().unwrap().mask);
+		let (xmin,ymin,xmax,ymax) = extract_surrounding_rect(&p.read().unwrap().mask);
 
 		//push
 		ret.push((xmin, ymin, xmax - xmin, ymax - ymin));
@@ -146,7 +146,7 @@ pub fn draw_solution(soluce:&Soluce, pieces: &PieceVec,fname:&str) {
 			let s = soluce.get((x+x_sol,y+y_sol)).unwrap();
 			let pid = s.piece_id;
 			if pid != NONE {
-				let p = pieces[pid].lock().unwrap();
+				let p = pieces[pid].read().unwrap();
 				let pos = (x as u32 * w_el,y as u32 * w_el);
 				draw_piece(&mut image, &p, s.rotation,pos,(w_el,h_el));
 			}

@@ -42,7 +42,7 @@ pub fn fix_bad_quality(pool: &Pool,all: &piece::PieceVec,file:&str,dump:i32)
 		let mut id: u32;
 		let mut position: (u32,u32,u32,u32);
 		{
-			let mut p = pp.lock().unwrap();
+			let mut p = pp.write().unwrap();
 			quality = p.quality;
 			id = p.id;
 			position = p.position;
@@ -82,7 +82,7 @@ pub fn fix_bad_quality(pool: &Pool,all: &piece::PieceVec,file:&str,dump:i32)
 			{
 				//rebuild final piece
 				let rgba = rgba.read().unwrap();
-				let mut f = pp.lock().unwrap();
+				let mut f = pp.write().unwrap();
 				f.load(&rgba,&background);
 				f.angle = best.lock().unwrap().1;
 				scan::scan_piece(&mut f, -1);

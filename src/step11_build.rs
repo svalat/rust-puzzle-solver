@@ -211,7 +211,7 @@ fn check_match_one_neighboot(pieces: &PieceVec, current: &mut Soluce, pos: (usiz
 
 			//search in list
 			{
-				let p = pieces[cur.piece_id].lock().unwrap();
+				let p = pieces[cur.piece_id].read().unwrap();
 				for link in p.matches[fid].iter() {
 					if link.piece == neighboor.piece_id && link.side == nfid {
 						ret = true;
@@ -298,7 +298,7 @@ fn search_next_step_recurse(pieces: &PieceVec, current: &mut Soluce, usage: &mut
 						let (id,nside) = extract_candidates(current,(x,y),coord);
 						let candidates: PieceMatchVec;
 						{
-							let n = pieces[id].lock().unwrap();
+							let n = pieces[id].read().unwrap();
 							//println!("=======> {:?} <-> {:?} ==> {} : {}",(x,y),coord,id,nside);
 							//println!("Candidated:0 {:?}",n.matches[0]);
 							//println!("Candidated:1 {:?}",n.matches[1]);
@@ -391,7 +391,7 @@ fn search_next_step_recurse(pieces: &PieceVec, current: &mut Soluce, usage: &mut
 	}
 }
 
-pub fn build_solution(pieces: &PieceVec, _dump:i32) -> Soluce {
+pub fn build_solution(pieces: &PieceVec, _dump:i32) -> SoluceVec {
     //estimate size & middle pos
     let size = pieces.len() * 2;
     let (x,y) = (size / 2, size / 2);
@@ -446,7 +446,7 @@ pub fn build_solution(pieces: &PieceVec, _dump:i32) -> Soluce {
 	}	
 
 	//return for test
-	proposal.list[0].clone()
+	proposal.list
 }
 
 #[cfg(test)]

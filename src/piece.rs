@@ -19,7 +19,7 @@ use std::u32;
 use image::GrayImage;
 use image::RgbaImage;
 use std::mem;
-use std::sync::{Mutex,Arc};
+use std::sync::{Arc,RwLock};
 
 //consts
 const EXTRACT_MARGINS: u32 = 30;
@@ -96,7 +96,7 @@ pub struct Piece {
 	pub matches: [PieceMatchVec;4],
 }
 
-pub type PieceVec = Vec<Arc<Mutex<Piece>>>;
+pub type PieceVec = Vec<Arc<RwLock<Piece>>>;
 
 impl PiecePoints {
 	/// Constructor to init coords
