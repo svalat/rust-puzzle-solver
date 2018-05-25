@@ -33,9 +33,9 @@ use common;
 
 fn move_face(face: &PieceFace,dx:f32,dy:f32) -> PieceFace {
 	PieceFace {
-		top: (face.top.0 - dx,face.top.1 - dy),
-		middle: (face.middle.0 - dx,face.middle.1 - dy),
-		bottom: (face.bottom.0 - dx,face.bottom.1 - dy),
+		top: (face.top.0 + dx,face.top.1 + dy),
+		middle: (face.middle.0 + dx,face.middle.1 + dy),
+		bottom: (face.bottom.0 + dx,face.bottom.1 + dy),
 		mode: face.mode,
 	}
 }
@@ -100,8 +100,8 @@ fn check_quick_face_distance_mirrored(face1: &PieceFace,face2: &PieceFace) -> (f
 
 fn check_quick_face_distance(face1: &PieceFace,face2: &PieceFace) -> (f32,f32,PieceFace) {
 	//calcule offset to match top
-	let dx = face2.top.0 - face1.top.0;
-	let dy = face2.top.1 - face1.top.1;
+	let dx = face1.top.0 - face2.top.0;
+	let dy = face1.top.1 - face2.top.1;
 
 	//applt offset
 	let face2 = move_face(&face2,dx,dy);
@@ -244,6 +244,21 @@ fn ignore_gray_overlap(out: &mut GrayImage, image: &RgbaImage, pos: (u32,u32),co
 	}
 }
 
+fn add_colored(out: &mut RgbaImage,input: &RgbaImage,mask: &GrayImage,pos: (u32,u32)) {
+	let (w,h) = mask.dimensions();
+	let (x0,y0) = pos;
+	let keep = Luma([common::MASK_PIECE_PIXEL]);
+	for y in 0..h {
+		for x in 0..w {
+			let m = mask.get_pixel(x,y);
+			if *m == keep {
+				let color = input.get_pixel(x,y);
+				out.put_pixel(x+x0,y+y0,*color);
+			}
+		}
+	}
+}
+
 fn add_mask(out: &mut GrayImage,mask: &GrayImage,pos: (u32,u32)) {
 	let (w,h) = mask.dimensions();
 	let (x0,y0) = pos;
@@ -279,8 +294,11 @@ fn count_superp(img: &GrayImage,rect:(u32,u32,u32,u32)) -> u32 {
 	for y in x0..x1 {
 		for x in y0..y1 {
 			let color = img.get_pixel(x,y);
-			if *color == c || *color == back {
+			if *color == back {
 				cnt += 1;
+			}
+			if *color == c {
+				cnt += 2;
 			}
 		}
 	}
@@ -309,7 +327,7 @@ fn move_rect(rect:(u32,u32,u32,u32),pos:(u32,u32)) -> (u32,u32,u32,u32) {
 	(rect.0 + pos.0,rect.1 + pos.1, rect.2 + pos.0, rect.3 + pos.1)
 }
 
-fn get_intersection(left: &GrayImage,pleft:(u32,u32),right: &GrayImage,pright:(u32,u32)) -> (u32,u32,u32,u32) {
+fn get_intersection(left: &GrayImage,left_face: &PieceFace,pleft:(u32,u32),right: &GrayImage,right_face: &PieceFace,pright:(u32,u32)) -> (u32,u32,u32,u32) {
 	//extract surrounding
 	let rect_left = step5_corners::extract_surrounding_rect(left);
 	let rect_right = step5_corners::extract_surrounding_rect(right);
@@ -317,14 +335,16 @@ fn get_intersection(left: &GrayImage,pleft:(u32,u32),right: &GrayImage,pright:(u
 	//move
 	let rect_left = move_rect(rect_left,pleft);
 	let rect_right = move_rect(rect_right,pright);
+	let left_face = move_face(left_face,pleft.0 as f32,pleft.1 as f32);
+	let right_face = move_face(right_face,pright.0 as f32,pright.1 as f32);
 
 	//intersect
-	let xmin = rect_right.0;
-	let xmax = rect_left.2;
-	let ymin = rect_left.1.max(rect_right.1);
-	let ymax = rect_left.3.min(rect_right.3);
+	let xmin = rect_right.0.min(left_face.top.0 as u32).min(left_face.bottom.0 as u32);
+	let xmax = rect_left.2.max(right_face.top.0 as u32).max(right_face.bottom.0 as u32);;
+	let ymin = left_face.top.1.min(right_face.top.1) as u32;
+	let ymax = left_face.bottom.1.max(right_face.bottom.1) as u32;
 
-	(xmin,ymin,xmax,ymax)
+	(xmin,ymin,xmax+1,ymax+1)
 }
 
 fn calc_face_mask_dist_offset(left: &Piece, fid_left: usize,right: &Piece, fid_right: usize,id: u32,dump: i32,offset:(i32,i32)) -> f32 {
@@ -335,6 +355,12 @@ fn calc_face_mask_dist_offset(left: &Piece, fid_left: usize,right: &Piece, fid_r
 
 	//build out image & roate masks
 	let mut img = GrayImage::new(size,size);
+	let mut dbgimg = RgbaImage::new(size,size);
+
+	add_colored(&mut dbgimg,& left.image, &left.mask, (0,0));
+	add_colored(&mut dbgimg,& right.image, &right.mask, (size/2,0));
+
+	//rotate
 	let mut left_mask = get_rotated_mask(&left.mask,fid_left,1);
 	let mut right_mask = get_rotated_mask(&right.mask,fid_right,3);
 	let left_img = get_rotated_rgba(&left.image,fid_left,1);
@@ -357,11 +383,13 @@ fn calc_face_mask_dist_offset(left: &Piece, fid_left: usize,right: &Piece, fid_r
 
 	//draw
 	add_mask(&mut img,&left_mask,left_pos);
+	add_colored(&mut dbgimg,& left_img, &left_mask, left_pos);
 	//step5_corners::draw_point(&mut img,(left_pos.0+left_face.top.0 as u32,left_pos.1+left_face.top.1 as u32));
 	//step5_corners::draw_point(&mut img,(left_pos.0+left_face.bottom.0 as u32,left_pos.1+left_face.bottom.1 as u32));
 	//step5_corners::draw_point(&mut img,(left_pos.0+left_face.middle.0 as u32,left_pos.1+left_face.middle.1 as u32));
 	
 	add_mask(&mut img,&right_mask,right_pos);
+	add_colored(&mut dbgimg,& right_img, &right_mask, right_pos);
 	//step5_corners::draw_point(&mut img,(right_pos.0+right_face.top.0 as u32,right_pos.1+right_face.top.1 as u32));
 	//step5_corners::draw_point(&mut img,(right_pos.0+right_face.middle.0 as u32,right_pos.1+right_face.middle.1 as u32));
 	//step5_corners::draw_point(&mut img,(right_pos.0+right_face.bottom.0 as u32,right_pos.1+right_face.bottom.1 as u32));
@@ -370,16 +398,26 @@ fn calc_face_mask_dist_offset(left: &Piece, fid_left: usize,right: &Piece, fid_r
 	//ignore_gray_overlap(&mut img,&left_img,left_pos,common::MASK_IGNORE_SUPERP);
 	//ignore_gray_overlap(&mut img,&right_img,right_pos,common::MASK_IGNORE_SUPERP);
 
+	//ret
+	let rect = get_intersection(&left_mask,&left_face,left_pos,&right_mask,&right_face,right_pos);
+	//println!("interect {:?}",rect);
+	let ret = count_superp(&img,rect) as f32;
+
+	/*for y in rect.1..rect.3 {
+		for x in rect.0..rect.2 {
+			dbgimg.put_pixel(x,y,Rgba([0,0,0,255]));
+		}
+	}*/
+
 	//save into file
-	if dump == -10 && (left.id == 4 && fid_left == 1 || right.id == 4 && fid_right == 1) {
-		let fname = format!("step-10-mask-match-{:05}-{}:{}-{}:{}-{}:{}.png",id,left.id,fid_left,right.id,fid_right,offset.0,offset.1);
+	if dump == -10 && offset == (0,0) { //&& (left.id == 4 && fid_left == 1 || right.id == 4 && fid_right == 1) {
+		let fname = format!("step-10-mask-match-{:05}-{}:{}-{}:{}-{}:{}-mask-{}.png",id,left.id,fid_left,right.id,fid_right,offset.0,offset.1,ret);
 		img.save(fname).unwrap();
+		let fname = format!("step-10-mask-match-{:05}-{}:{}-{}:{}-{}:{}-color-{}.png",id,left.id,fid_left,right.id,fid_right,offset.0,offset.1,ret);
+		dbgimg.save(fname).unwrap();
 	}
 
-	//ret
-	let rect = get_intersection(&left_mask,left_pos,&right_mask,right_pos);
-	//println!("interect {:?}",rect);
-	count_superp(&img,rect) as f32
+	ret
 }
 
 pub fn compute_matching(pool: &Pool,pieces: &mut PieceVec, dump:i32) {
@@ -409,7 +447,7 @@ pub fn compute_matching(pool: &Pool,pieces: &mut PieceVec, dump:i32) {
 			for fid1 in 0..4 {
 				let face1 = &p1.faces[fid1];
 				let face1 = rotate_face_center(p1.mask.dimensions(),&face1,fid1,1);
-				let face1 = move_face(&face1,face1.top.0,face1.top.1);
+				let face1 = move_face(&face1,-face1.top.0,-face1.top.1);
 
 				for fid2 in 0..4 {
 					let face2 = &p2.faces[fid2];
@@ -443,7 +481,7 @@ pub fn compute_matching(pool: &Pool,pieces: &mut PieceVec, dump:i32) {
 	println!("Calc median");
 	full_soluce.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(Ordering::Equal));
     let mid = full_soluce.len() / 2;
-	let cut = full_soluce[mid].0 / 2.0;
+	let cut = full_soluce[mid].0; /// 2.0;
 	println!("median = {}, median/2 = {}",full_soluce[mid].0,cut);
 
 	//apply second step filter
@@ -481,7 +519,7 @@ pub fn compute_matching(pool: &Pool,pieces: &mut PieceVec, dump:i32) {
 	println!("Calc median");
 	filtered_soluce.lock().unwrap().sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(Ordering::Equal));
     let mid = filtered_soluce.lock().unwrap().len() / 2;
-	let cut = filtered_soluce.lock().unwrap()[mid].0 / 2.0;
+	let cut = filtered_soluce.lock().unwrap()[mid].0; // / 2.0;
 	println!("median = {}, median/2 = {}",filtered_soluce.lock().unwrap()[mid].0,cut);
 
 	//loop and save
