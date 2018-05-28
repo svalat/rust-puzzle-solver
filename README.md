@@ -24,7 +24,7 @@ cargo build --release
 You can then run on one image :
 
 ```sh
-./target/release/rust-puzzle-solver tests/really-harder-1.png
+./target/release/rust-puzzle-solver tests/real-1.png
 ```
 
 If you add option `--dump` will output pictures into the current directory with solution and steps of the solver to help debugging.
