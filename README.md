@@ -3,6 +3,8 @@ Rust puzzle solver (WORK IN PROGRESS)
 
 **CAUTION this is a work in progress !**
 
+[![Build Status](https://travis-ci.org/svalat/rust-puzzle-solver.svg?branch=master)](https://travis-ci.org/svalat/rust-puzzle-solver)
+
 This project is a fun project I made to learn Rust. The idea is to solve a puzzle by taking the pieces in photo on a white paper.
 
 The tool take out the pieces and try to match them all together to form the puzzle then provide the final solution.
