@@ -204,7 +204,7 @@ dependencies = [
 [[package]]
 name = "imageproc"
 version = "0.15.0"
-source = "git+https://github.com/svalat/imageproc.git?branch=rgba_fix#2e1abe18b4597926832409b8a3e53584f70ba935"
+source = "git+https://github.com/PistonDevelopers/imageproc.git?rev=efeabd5d7#efeabd5d74cd829b34bd304d5147abbf0d851e98"
 dependencies = [
  "conv 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "image 0.19.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -546,7 +546,7 @@ version = "0.1.0"
 dependencies = [
  "argparse 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "image 0.19.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "imageproc 0.15.0 (git+https://github.com/svalat/imageproc.git?branch=rgba_fix)",
+ "imageproc 0.15.0 (git+https://github.com/PistonDevelopers/imageproc.git?rev=efeabd5d7)",
  "ndarray 0.11.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "num-traits 0.1.43 (registry+https://github.com/rust-lang/crates.io-index)",
  "scoped-pool 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -738,7 +738,7 @@ dependencies = [
 "checksum gif 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)" = "ff3414b424657317e708489d2857d9575f4403698428b040b609b9d1c1a84a2c"
 "checksum humantime 1.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "0484fda3e7007f2a4a0d9c3a703ca38c71c54c55602ce4660c419fd32e188c9e"
 "checksum image 0.19.0 (registry+https://github.com/rust-lang/crates.io-index)" = "ebdff791af04e30089bde8ad2a632b86af433b40c04db8d70ad4b21487db7a6a"
-"checksum imageproc 0.15.0 (git+https://github.com/svalat/imageproc.git?branch=rgba_fix)" = "<none>"
+"checksum imageproc 0.15.0 (git+https://github.com/PistonDevelopers/imageproc.git?rev=efeabd5d7)" = "<none>"
 "checksum inflate 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)" = "4ec18d981200fd14e65ee8e35fb60ed1ce55227a02407303f3a72517c6146dcc"
 "checksum itertools 0.7.8 (registry+https://github.com/rust-lang/crates.io-index)" = "f58856976b776fedd95533137617a02fb25719f40e7d9b01c7043cd65474f450"
 "checksum jpeg-decoder 0.1.14 (registry+https://github.com/rust-lang/crates.io-index)" = "0dfe27a6c0dabd772d0f9b9f8701c4ca12c4d1eebcadf2be1f6f70396f6a1434"
