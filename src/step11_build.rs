@@ -479,7 +479,7 @@ pub fn build_solution(pieces: &PieceVec, _dump:i32) -> SoluceVec {
 
 #[cfg(test)]
 mod test {
-	use std::sync::{Arc,Mutex};
+	use std::sync::{Arc,RwLock};
 	use image::{RgbaImage};
 	use step11_build::*;
 	use piece::{PieceVec,PieceMatch,Piece};
@@ -491,20 +491,20 @@ mod test {
 		let back = image.get_pixel(0,0);
 		let mut all: PieceVec = Vec::new();
 		for i in 0..9 {
-			all.push(Arc::new(Mutex::new(Piece::new(&image,&back,rect,i))));
+			all.push(Arc::new(RwLock::new(Piece::new(&image,&back,rect,i))));
 		}
 
 		//let links
 		{
-			let mut p0 = all[0].lock().unwrap();
-			let mut p1 = all[1].lock().unwrap();
-			let mut p2 = all[2].lock().unwrap();
-			let mut p3 = all[3].lock().unwrap();
-			let mut p4 = all[4].lock().unwrap();
-			let mut p5 = all[5].lock().unwrap();
-			let mut p6 = all[6].lock().unwrap();
-			let mut p7 = all[7].lock().unwrap();
-			let mut p8 = all[8].lock().unwrap();
+			let mut p0 = all[0].write().unwrap();
+			let mut p1 = all[1].write().unwrap();
+			let mut p2 = all[2].write().unwrap();
+			let mut p3 = all[3].write().unwrap();
+			let mut p4 = all[4].write().unwrap();
+			let mut p5 = all[5].write().unwrap();
+			let mut p6 = all[6].write().unwrap();
+			let mut p7 = all[7].write().unwrap();
+			let mut p8 = all[8].write().unwrap();
 
 			p5.matches[0].push(PieceMatch{piece:7,side:3,angle:0.0,distance:0.0});
 			p7.matches[0].push(PieceMatch{piece:3,side:2,angle:0.0,distance:0.0});
@@ -529,6 +529,7 @@ mod test {
 
 		//build
 		let sol = build_solution(&all,-1);
+		let sol = &sol[0];
 
 		//check solution
 		assert_eq!(*sol.get((9,9)).unwrap(), SoluceElmt{piece_id:0,rotation:0});
