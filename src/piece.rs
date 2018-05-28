@@ -18,7 +18,7 @@ use std::u32;
 //from image
 use image::GrayImage;
 use image::RgbaImage;
-use std::mem;
+//use std::mem;
 use std::sync::{Arc,RwLock};
 
 //consts

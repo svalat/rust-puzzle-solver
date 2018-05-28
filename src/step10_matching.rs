@@ -58,13 +58,6 @@ fn face_mirror_on_y(face: &PieceFace) -> PieceFace {
 	}
 }
 
-fn rotate_point(point:(f32,f32),angle:f32) -> (f32,f32) {
-	let (x,y) = point;
-	let xf = x * angle.cos() - y * angle.sin();
-	let yf = x * angle.sin() + y * angle.cos();
-	(xf,yf)
-}
-
 fn rotate_point_center(point:(f32,f32),center:(f32,f32),center_after:(f32,f32),angle:f32) -> (f32,f32) {
 	let (x,y) = point;
 	let (cx,cy) = center;
@@ -73,23 +66,6 @@ fn rotate_point_center(point:(f32,f32),center:(f32,f32),center_after:(f32,f32),a
 	let xf = cx1 + (x-cx) * angle.cos() - (y-cy) * angle.sin();
 	let yf = cy1 + (x-cx) * angle.sin() + (y-cy) * angle.cos();
 	(xf,yf)
-}
-
-fn rotate_face(face:&PieceFace,angle:f32) -> PieceFace {
-	//compute
-	let mut ret = PieceFace {
-		top: rotate_point(face.top,angle),
-		middle: rotate_point(face.middle,angle),
-		bottom: rotate_point(face.bottom,angle),
-		mode: face.mode,
-	};
-
-	//invert
-	if ret.top.1 > ret.bottom.1 {
-		mem::swap(&mut ret.top,&mut ret.bottom);
-	}
-
-	ret
 }
 
 fn check_quick_face_distance_mirrored(face1: &PieceFace,face2: &PieceFace) -> (f32,f32,PieceFace) {
